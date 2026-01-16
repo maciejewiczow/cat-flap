@@ -10,16 +10,16 @@ COPY ./shared ./shared
 COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
-RUN uv sync --directory ./scripts
-
-RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
-
-RUN uv sync
-
 RUN addgroup -S app && adduser -S app -G app
 
 RUN chown -R app:app /source
 
 USER app
+
+RUN uv sync --directory ./scripts
+
+RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
+
+RUN uv sync
 
 CMD ["uv", "run", "$APP_SERVICE_NAME/main.py"]
