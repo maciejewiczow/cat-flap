@@ -1,0 +1,8 @@
+[project]
+name = "diodes-service"
+version = "0.1.0"
+description = "Status diodes service for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "shared"
+]

@@ -1,0 +1,9 @@
+[project]
+name = "image-saver-service"
+version = "0.1.0"
+description = "Image saver service for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "shared"
+]
+

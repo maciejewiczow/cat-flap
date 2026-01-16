@@ -1,0 +1,14 @@
+[project]
+name = "inference-service"
+version = "0.1.0"
+description = "Inference service for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "shared"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ultralytics"
+]
+
