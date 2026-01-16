@@ -5,7 +5,7 @@ ENV SOCKETS_DIR=/var/run/cat-flap/sockets
 
 WORKDIR /source
 
-COPY $APP_SERVICE_NAME ./$APP_SERVICE_NAME
+COPY ./$APP_SERVICE_NAME ./$APP_SERVICE_NAME
 COPY ./shared ./shared
 COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
