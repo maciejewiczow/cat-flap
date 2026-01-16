@@ -81,7 +81,7 @@ jobs:
             APP_SERVICE_NAME=${{matrix.service.name}}-service
           file: ./Dockerfile
           push: false
-          labels: ${{matrix.service.name}}-base-app
+          tags: ${{matrix.service.name}}-base-app
 
       - name: Build service Docker image
         if: ${{ steps.has-dockerfile.outcome == 'success' }}
