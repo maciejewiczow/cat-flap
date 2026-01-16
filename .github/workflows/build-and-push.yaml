@@ -57,7 +57,7 @@ jobs:
         with:
           context: .
           build-args: |
-            APP_SERVICE_NAME="${{matrix.service.name}}-service"
+            APP_SERVICE_NAME=${{matrix.service.name}}-service
           file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -78,7 +78,7 @@ jobs:
         with:
           context: .
           build-args: |
-            APP_SERVICE_NAME="${{matrix.service.name}}-service"
+            APP_SERVICE_NAME=${{matrix.service.name}}-service
           file: ./Dockerfile
           push: false
           labels: ${{matrix.service.name}}-base-app
