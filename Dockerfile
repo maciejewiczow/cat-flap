@@ -1,7 +1,9 @@
-FROM ghcr.io/astral-sh/uv:alpine3.22
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm as build
 ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
+
+RUN apt update && apt install build-tools -y
 
 WORKDIR /source
 
@@ -35,6 +37,13 @@ RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.sour
 RUN uv sync
 
 RUN uv sync --directory $APP_SERVICE_NAME --no-dev
+
+FROM ghcr.io/astral-sh/uv:alpine3.22
+ARG APP_SERVICE_NAME
+
+COPY --from=build ./$APP_SERVICE_NAME ./$APP_SERVICE_NAME
+COPY --from=build ./shared ./shared
+COPY --from=build pyproject.toml ./pyproject.toml
 
 ENV COMMAND="uv run ${APP_SERVICE_NAME}/main.py"
 
