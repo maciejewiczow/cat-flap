@@ -8,9 +8,8 @@ on:
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
-      fail-fast: true
       matrix:
         service:
           - name: diodes
