@@ -101,11 +101,3 @@ jobs:
           push: true
           tags: ${{ steps.meta-final-image.outputs.tags }}
           labels: ${{ steps.meta-final-image.outputs.labels }}
-
-      - name: Generate artifact attestation
-        if: ${{ steps.has-dockerfile.outcome == 'success' }}
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-name: mafciejewiczow/cat-flap-${{matrix.service.name}}-svc
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          push-to-registry: true
