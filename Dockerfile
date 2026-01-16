@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm as build
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS build
 ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
@@ -12,7 +12,7 @@ COPY ./shared ./shared
 COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
-RUN useradd -rU app
+RUN useradd -rUM app
 
 RUN chown -R app:app /source
 
