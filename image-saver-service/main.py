@@ -12,6 +12,9 @@ results_save_dir = "/data/results"
 
 
 async def handle_messages(hub: WorkerMessageHub):
+    log.info("Starting the image saver service")
+    await hub.subscribe()
+
     async for message in hub.receive():
         match message:
             case ImageCapturedMessage(image=image, timestamp=timestamp):

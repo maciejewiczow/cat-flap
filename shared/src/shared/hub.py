@@ -36,14 +36,16 @@ class WorkerMessageHub(MessageHub):
     def __init__(self, socket_dir: str):
         super().__init__(socket_dir)
 
+        self.sub_socket = self.context.socket(zmq.SUB)
         self.pub_socket = self.context.socket(zmq.PUB)
 
-        self.pub_socket.connect(self.pub_address)
-
-        self.sub_socket = self.context.socket(zmq.SUB)
         self.sub_socket.connect(self.sub_address)
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
+        self.pub_socket.connect(self.pub_address)
+
+    async def subscribe(self):
+        await asyncio.sleep(0.5)
         self.poller = zmq.asyncio.Poller()
         self.poller.register(self.sub_socket, zmq.POLLIN)
 

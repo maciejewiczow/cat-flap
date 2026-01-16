@@ -14,12 +14,15 @@ executor = ThreadPoolExecutor(max_workers=1)
 
 factory = PiGPIOFactory()
 
-button = Button(pin=int(environ.get("MOTION_SENSOR_PIN", 25)), pin_factory=factory)
+button = Button(
+    pin=int(environ.get("MOTION_SENSOR_PIN", 25)), pin_factory=factory, pull_up=False
+)
 
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the movement detector service")
     loop = asyncio.get_event_loop()
+    await hub.subscribe()
 
     while True:
         await loop.run_in_executor(executor, button.wait_for_active)

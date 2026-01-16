@@ -12,7 +12,7 @@ def main():
         hub = HubProcessMessageHub(environ["SOCKETS_DIR"])
 
         hub.run_hub()
-    except Exception:
+    except:  # noqa: E722
         log.exception("An exception was thrown")
 
 

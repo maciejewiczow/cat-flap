@@ -42,6 +42,8 @@ class ModelProcessor:
 
 
 async def handle_messages(hub: WorkerMessageHub):
+    log.info("Starting the inference service")
+    await hub.subscribe()
     processor = ModelProcessor()
 
     async for message in hub.receive():
