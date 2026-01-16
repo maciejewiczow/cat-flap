@@ -6,6 +6,8 @@ log = get_logger("<%= relativeFilePath.split(/\\|\//).at(-2) %>")
 
 
 async def handle_messages(hub: WorkerMessageHub):
+    log.info("Starting the <%= description %>")
+
     async for message in hub.receive():
         match message:
             case _:

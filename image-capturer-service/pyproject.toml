@@ -1,0 +1,10 @@
+[project]
+name = "image-capturer-service"
+version = "0.1.0"
+description = "Image capture service for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "shared",
+    "picamera",
+    "numpy",
+]

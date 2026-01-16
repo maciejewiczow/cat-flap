@@ -20,6 +20,7 @@ jobs:
           - name: logic
           - name: movement-detector
           - name: servo
+          - name: image-capturer
     permissions:
       packages: write
       contents: read

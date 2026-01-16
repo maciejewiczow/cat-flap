@@ -1,3 +1,4 @@
+import os
 from PIL import Image
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
@@ -13,6 +14,10 @@ results_save_dir = "/data/results"
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the image saver service")
+
+    os.makedirs(raw_capture_save_dir, exist_ok=True)
+    os.makedirs(labeled_save_dir, exist_ok=True)
+    os.makedirs(results_save_dir, exist_ok=True)
 
     async for message in hub.receive():
         match message:

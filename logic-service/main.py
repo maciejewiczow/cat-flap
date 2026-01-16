@@ -15,8 +15,6 @@ from shared.utils.str_to_timedelta import str_to_timedelta
 
 log = get_logger("logic")
 
-state_file_path = "/data/state.json"
-
 capture_interval = str_to_timedelta(environ.get("CAPTURE_INTERVAL", "2s"))
 
 

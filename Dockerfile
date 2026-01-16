@@ -18,9 +18,13 @@ RUN mkdir -p /var/run/cat-flap/sockets
 
 RUN mkdir -p /var/log/cat-flap
 
+RUN mkdir /data
+
 RUN chown app:app /var/log/cat-flap
 
 RUN chown app:app /var/run/cat-flap/sockets
+
+RUN chown app:app /data
 
 USER app
 

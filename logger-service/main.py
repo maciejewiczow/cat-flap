@@ -10,7 +10,6 @@ async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the logger service")
 
     async for message in hub.receive():
-        log.debug(f"Received an object {message}")
         match message:
             case Message():
                 log.debug(

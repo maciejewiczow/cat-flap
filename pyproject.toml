@@ -9,6 +9,7 @@ dependencies = []
 diodes-service = { workspace = true }
 hub-service = { workspace = true }
 image-saver-service = { workspace = true }
+image-capturer-service = { workspace = true }
 inference-service = { workspace = true }
 logger-service = { workspace = true }
 logic-service = { workspace = true }
@@ -33,6 +34,7 @@ dev-dependencies = [
   "logic-service",
   "movement-detector-service",
   "servo-service",
+  "image-capturer-service",
   "shared",
 ]
 package = false
