@@ -18,7 +18,7 @@ RUN uv sync
 
 RUN adduser -S app
 
-RUN chown -R app /source
+RUN chown -R app:app /source
 
 USER app
 
