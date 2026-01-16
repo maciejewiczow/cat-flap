@@ -16,7 +16,7 @@ RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.sour
 
 RUN uv sync
 
-RUN adduser -S app
+RUN adduser -SG app app
 
 RUN chown -R app:app /source
 
