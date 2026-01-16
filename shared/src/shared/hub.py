@@ -19,14 +19,17 @@ class HubProcessMessageHub(MessageHub):
         xpub = self.context.socket(zmq.XPUB)
         xsub = self.context.socket(zmq.XSUB)
 
+        xpub.setsockopt(zmq.XPUB_VERBOSE, 1)
+
         xpub.bind(self.pub_address)
         xsub.bind(self.sub_address)
 
         try:
-            zmq.proxy(xpub, xsub)
+            zmq.proxy(xsub, xpub)
         finally:
             xpub.close()
             xsub.close()
+            self.context.term()
 
 
 class WorkerMessageHub(MessageHub):
