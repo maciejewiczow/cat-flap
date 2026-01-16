@@ -13,8 +13,6 @@ class MessageHub:
 
         self.pub_address = f"ipc://{socket_dir}/message_hub_pub.sock"
         self.sub_address = f"ipc://{socket_dir}/message_hub_sub.sock"
-        # self.pub_address = "tcp://*:5555"
-        # self.sub_address = "tcp://*:5556"
 
 
 class HubProcessMessageHub(MessageHub):
@@ -48,8 +46,6 @@ class WorkerMessageHub(MessageHub):
 
         self.pub_socket.connect(self.sub_address)
 
-    async def subscribe(self):
-        await asyncio.sleep(0.5)
         self.poller = zmq.asyncio.Poller()
         self.poller.register(self.sub_socket, zmq.POLLIN)
 
@@ -60,8 +56,6 @@ class WorkerMessageHub(MessageHub):
         while True:
             try:
                 events = await self.poller.poll(timeout=timeout)
-
-                self.log.debug(f"Received events: {events}", extra={"events": events})
 
                 if events:
                     yield pickle.loads(await self.sub_socket.recv())

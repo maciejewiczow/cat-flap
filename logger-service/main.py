@@ -8,15 +8,13 @@ log = get_logger("event-logger")
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the logger service")
-    await hub.subscribe()
 
     async for message in hub.receive():
         log.debug(f"Received an object {message}")
         match message:
             case Message():
                 log.debug(
-                    f"Received message of type {type(message).__name__}",
-                    extra={"message": message, "type": type(message).__name__},
+                    f"Received message of type {type(message).__name__}: {message}",
                 )
                 continue
 

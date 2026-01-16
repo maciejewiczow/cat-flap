@@ -23,7 +23,6 @@ servo = Servo(
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the servo service")
-    await hub.subscribe()
 
     async for message in hub.receive():
         match message:

@@ -8,7 +8,6 @@ log = get_logger("diodes")
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the diodes service")
-    await hub.subscribe()
 
     async for message in hub.receive():
         match message:

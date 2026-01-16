@@ -22,7 +22,6 @@ button = Button(
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the movement detector service")
     loop = asyncio.get_event_loop()
-    await hub.subscribe()
 
     while True:
         await loop.run_in_executor(executor, button.wait_for_active)
