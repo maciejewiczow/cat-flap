@@ -1,6 +1,6 @@
 FROM mafciejewiczow/cat-flap-movement-detector-base-app:master
 
-RUN apt-get update && apt-get install -y \
+RUN apk update && apk add -y \
     libpigpio-dev \
     pigpio
 
