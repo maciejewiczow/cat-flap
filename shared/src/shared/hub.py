@@ -11,10 +11,10 @@ class MessageHub:
     def __init__(self, socket_dir: str):
         self.context = zmq.asyncio.Context()
 
-        # self.pub_address = f"ipc://{socket_dir}/message_hub_pub.sock"
-        # self.sub_address = f"ipc://{socket_dir}/message_hub_sub.sock"
-        self.pub_address = "tcp://*:5555"
-        self.sub_address = "tcp://*:5556"
+        self.pub_address = f"ipc://{socket_dir}/message_hub_pub.sock"
+        self.sub_address = f"ipc://{socket_dir}/message_hub_sub.sock"
+        # self.pub_address = "tcp://*:5555"
+        # self.sub_address = "tcp://*:5556"
 
 
 class HubProcessMessageHub(MessageHub):
