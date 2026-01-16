@@ -11,17 +11,15 @@ def worker_main(
     message_handler: Callable[[WorkerMessageHub], Coroutine[Any, Any, None]],
 ):
     try:
-        loop = asyncio.get_event_loop()
-
         hub = WorkerMessageHub(environ["SOCKETS_DIR"])
 
         def signal_handler(signum, frame):
             log.info(f"Signal {signum} received, shutting down...")
-            loop.stop()
+            asyncio.get_event_loop().stop()
 
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-        loop.run_until_complete(message_handler(hub))
+        asyncio.run(message_handler(hub))
     except KeyError:
         log.exception("Missing socket dir config")
