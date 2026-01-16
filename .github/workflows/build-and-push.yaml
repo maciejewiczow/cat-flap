@@ -41,7 +41,7 @@ jobs:
 
       - name: Check for service-specific dockerfile
         id: has-dockerfile
-        run: ls "${{matrix.service.name}}/Dockerfile"
+        run: ls ./${{matrix.service.name}}-service/Dockerfile
         continue-on-error: true
 
       - name: Extract metadata (tags, labels) for Docker
