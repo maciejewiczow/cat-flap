@@ -24,7 +24,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      attestations: write
       id-token: write
     steps:
       - name: Check out the repo
@@ -62,14 +61,6 @@ jobs:
           push: true
           tags: ${{ steps.meta-final-image.outputs.tags }}
           labels: ${{ steps.meta-final-image.outputs.labels }}
-
-      - name: Generate artifact attestation
-        if: ${{ steps.has-dockerfile.outcome == 'failure' }}
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-name: mafciejewiczow/cat-flap-${{matrix.service.name}}-svc
-          subject-digest: ${{ steps.build-and-push-only.outputs.digest }}
-          push-to-registry: true
 
       - name: Extract metadata (tags, labels) for Docker app base image
         if: ${{ steps.has-dockerfile.outcome == 'success' }}
