@@ -14,6 +14,10 @@ RUN addgroup -S app && adduser -S app -G app
 
 RUN chown -R app:app /source
 
+RUN mkdir /var/log/cat-flap
+
+RUN chown app:app /var/log/cat-flap
+
 USER app
 
 RUN uv sync --directory ./scripts
@@ -22,4 +26,6 @@ RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.sour
 
 RUN uv sync
 
-CMD ["uv", "run", "$APP_SERVICE_NAME/main.py"]
+RUN uv sync --directory $APP_SERVICE_NAME-service
+
+CMD ["uv", "run", $APP_SERVICE_NAME-service/main.py]
