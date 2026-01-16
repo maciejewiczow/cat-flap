@@ -18,6 +18,8 @@ RUN uv sync
 
 RUN adduser -S app
 
+RUN chown -R app /source
+
 USER app
 
 CMD ["uv", "run", "$APP_SERVICE_NAME/main.py"]
