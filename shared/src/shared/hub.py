@@ -43,10 +43,10 @@ class WorkerMessageHub(MessageHub):
         self.sub_socket = self.context.socket(zmq.SUB)
         self.pub_socket = self.context.socket(zmq.PUB)
 
-        self.sub_socket.connect(self.sub_address)
+        self.sub_socket.connect(self.pub_address)
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
-        self.pub_socket.connect(self.pub_address)
+        self.pub_socket.connect(self.sub_address)
 
     async def subscribe(self):
         await asyncio.sleep(0.5)
