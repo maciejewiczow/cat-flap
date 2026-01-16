@@ -4,7 +4,7 @@ from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
 from shared.messages import ImageCapturedMessage, StartCaptureMessage
-import picamera  # pyright: ignore[reportMissingImports]
+import picamera2  # pyright: ignore[reportMissingImports]
 import numpy as np
 from PIL import Image
 
@@ -19,26 +19,24 @@ camera_res = (
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the image capture service")
 
-    with picamera.PiCamera() as camera:
-        camera.resolution = camera_res
-        await asyncio.sleep(2)
-        log.info("Initialized the camera")
+    camera = picamera2.Picamera2()
+    camera.configure(camera.create_still_configuration(display=None))
+    camera.start()
 
-        async for message in hub.receive():
-            match message:
-                case StartCaptureMessage():
-                    try:
-                        image = np.empty((*camera_res, 3), dtype=np.uint8)
+    await asyncio.sleep(2)
+    log.info("Initialized the camera")
 
-                        camera.capture(image, "rgb")
+    async for message in hub.receive():
+        match message:
+            case StartCaptureMessage():
+                try:
+                    image = camera.capture_array("main")
 
-                        await hub.send(
-                            ImageCapturedMessage(image=Image.fromarray(image))
-                        )
-                    except:  # noqa: E722
-                        log.exception(
-                            "An exception happened while trying to capture the image"
-                        )
+                    await hub.send(ImageCapturedMessage(image=Image.fromarray(image)))
+                except:  # noqa: E722
+                    log.exception(
+                        "An exception happened while trying to capture the image"
+                    )
 
 
 if __name__ == "__main__":
