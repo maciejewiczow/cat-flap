@@ -46,11 +46,11 @@ class StartCaptureMessage(Message):
 
 @dataclass
 class ImageCapturedMessage(Message):
-    image: Image
+    image: Image = field(repr=False)
 
 
 @dataclass
 class InferenceCompleteMessage(Message):
     detected_classes: list[tuple[str, float]]
-    image_with_overlays: np.ndarray
+    image_with_overlays: np.ndarray = field(repr=False)
     result_json: str
