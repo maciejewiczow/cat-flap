@@ -14,9 +14,13 @@ RUN addgroup -S app && adduser -S app -G app
 
 RUN chown -R app:app /source
 
+RUN mkdir /var/run/cat-flap/sockets
+
 RUN mkdir /var/log/cat-flap
 
 RUN chown app:app /var/log/cat-flap
+
+RUN chown app:app /var/run/cat-flap/sockets
 
 USER app
 
