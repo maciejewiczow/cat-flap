@@ -12,7 +12,7 @@ COPY ./shared ./shared
 COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
-RUN addgroup -S app && adduser -S app -G app
+RUN useradd -rU app
 
 RUN chown -R app:app /source
 
