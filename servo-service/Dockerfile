@@ -2,7 +2,7 @@ FROM mafciejewiczow/cat-flap-servo-base-app:master
 
 USER root
 
-RUN apk update && apk add -y \
+RUN apk update && apk add \
     libpigpio-dev \
     pigpio
 
