@@ -18,6 +18,7 @@ button = Button(pin=int(environ.get("MOTION_SENSOR_PIN", 25)), pin_factory=facto
 
 
 async def handle_messages(hub: WorkerMessageHub):
+    log.info("Starting the movement detector service")
     loop = asyncio.get_event_loop()
 
     while True:
