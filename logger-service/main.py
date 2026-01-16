@@ -7,6 +7,7 @@ log = get_logger("event-logger")
 
 
 async def handle_messages(hub: WorkerMessageHub):
+    log.info("Starting the logger service")
     async for message in hub.receive():
         match message:
             case Message():

@@ -1,5 +1,4 @@
 import logging
-from logging import Logger
 import logging.handlers
 from os import environ, makedirs
 import sys
@@ -12,7 +11,7 @@ logging.basicConfig(
 
 
 def get_logger(name: str):
-    log = Logger(name)
+    log = logging.getLogger(name)
 
     dirname = environ.get("LOG_FOLDER", "/var/log/cat-flap")
 
