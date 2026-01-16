@@ -45,7 +45,7 @@ jobs:
         continue-on-error: true
 
       - name: Extract metadata (tags, labels) for Docker
-        id: meta
+        id: meta-final-image
         uses: docker/metadata-action@v4
         with:
           images: mafciejewiczow/cat-flap-${{matrix.service.name}}-svc
@@ -60,8 +60,8 @@ jobs:
             APP_SERVICE_NAME=${{matrix.service.name}}-service
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-final-image.outputs.tags }}
+          labels: ${{ steps.meta-final-image.outputs.labels }}
 
       - name: Generate artifact attestation
         if: ${{ steps.has-dockerfile.outcome == 'failure' }}
@@ -70,6 +70,13 @@ jobs:
           subject-name: mafciejewiczow/cat-flap-${{matrix.service.name}}-svc
           subject-digest: ${{ steps.build-and-push-only.outputs.digest }}
           push-to-registry: true
+
+      - name: Extract metadata (tags, labels) for Docker app base image
+        if: ${{ steps.has-dockerfile.outcome == 'success' }}
+        id: meta-with-descendant
+        uses: docker/metadata-action@v4
+        with:
+          images: mafciejewiczow/cat-flap-${{matrix.service.name}}-base-app
 
       - name: Build base Docker image
         if: ${{ steps.has-dockerfile.outcome == 'success' }}
@@ -80,9 +87,9 @@ jobs:
           build-args: |
             APP_SERVICE_NAME=${{matrix.service.name}}-service
           file: ./Dockerfile
-          push: false
-          tags: ${{matrix.service.name}}-base-app
-          load: true
+          push: true
+          tags: ${{ steps.meta-with-descendant.outputs.tags }}
+          labels: ${{ steps.meta-with-descendant.outputs.labels }}
 
       - name: Build service Docker image
         if: ${{ steps.has-dockerfile.outcome == 'success' }}
@@ -92,8 +99,8 @@ jobs:
           context: .
           file: ./${{matrix.service.name}}-service/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-final-image.outputs.tags }}
+          labels: ${{ steps.meta-final-image.outputs.labels }}
 
       - name: Generate artifact attestation
         if: ${{ steps.has-dockerfile.outcome == 'success' }}

@@ -1,4 +1,4 @@
-FROM servo-base-app
+FROM mafciejewiczow/cat-flap-servo-base-app:latest
 
 RUN apt-get update && apt-get install -y \
     libpigpio-dev \

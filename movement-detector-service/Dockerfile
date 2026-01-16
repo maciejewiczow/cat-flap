@@ -1,4 +1,4 @@
-FROM movement-detector-base-app
+FROM mafciejewiczow/cat-flap-movement-detector-base-app:latest
 
 RUN apt-get update && apt-get install -y \
     libpigpio-dev \
