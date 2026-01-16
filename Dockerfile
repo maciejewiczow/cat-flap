@@ -26,6 +26,6 @@ RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.sour
 
 RUN uv sync
 
-RUN uv sync --directory $APP_SERVICE_NAME-service
+RUN uv sync --directory $APP_SERVICE_NAME
 
-CMD ["uv", "run", $APP_SERVICE_NAME-service/main.py]
+CMD ["uv", "run", $APP_SERVICE_NAME/main.py]
