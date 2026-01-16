@@ -26,7 +26,7 @@ RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.sour
 
 RUN uv sync
 
-RUN uv sync --directory $APP_SERVICE_NAME --no-dev`
+RUN uv sync --directory $APP_SERVICE_NAME --no-dev
 
 ENV COMMAND="uv run ${APP_SERVICE_NAME}/main.py"
 
