@@ -1,4 +1,5 @@
 import asyncio
+from logging import Logger
 import pickle
 from typing import Any, AsyncGenerator
 import zmq
@@ -33,8 +34,9 @@ class HubProcessMessageHub(MessageHub):
 
 
 class WorkerMessageHub(MessageHub):
-    def __init__(self, socket_dir: str):
+    def __init__(self, socket_dir: str, log: Logger):
         super().__init__(socket_dir)
+        self.log = log
 
         self.sub_socket = self.context.socket(zmq.SUB)
         self.pub_socket = self.context.socket(zmq.PUB)
@@ -56,6 +58,8 @@ class WorkerMessageHub(MessageHub):
         while True:
             try:
                 events = await self.poller.poll(timeout=timeout)
+
+                self.log.debug(f"Received events: {events}", extra={"events": events})
 
                 if events:
                     yield pickle.loads(await self.sub_socket.recv())
