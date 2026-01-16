@@ -1,0 +1,6 @@
+{
+  "name": "Worker pyproject file",
+  "fileTemplateName": "pyproject.toml",
+  "onlyAsPartOfGroup": false,
+  "disabled": false
+}

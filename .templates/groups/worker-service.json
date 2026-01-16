@@ -1,0 +1,10 @@
+{
+  "name": "Worker service",
+  "templates": [
+    "python-version-file",
+    "worker-main-file",
+    "worker-pyproject-file"
+  ],
+  "templatesUseSameVariables": true,
+  "disabled": false
+}
