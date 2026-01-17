@@ -46,7 +46,7 @@ RUN uv sync --directory $APP_SERVICE_NAME --no-dev
 
 USER app
 
-FROM ghcr.io/astral-sh/uv:alpine3.22
+FROM python:3.13.11-alpine3.23
 ARG APP_SERVICE_NAME
 
 COPY --from=build --chown=app:app /source /source
