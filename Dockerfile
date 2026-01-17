@@ -27,6 +27,7 @@ FROM dtcooper/raspberrypi-os:python3.13-bookworm
 ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
+ENV PYTHONPATH="/usr/lib/python3/dist-packages:${PYTHONPATH}"
 
 RUN adduser \
     --disabled-password \
