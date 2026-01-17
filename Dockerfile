@@ -35,6 +35,8 @@ RUN adduser \
 
 RUN mkdir -p $SOCKETS_DIR
 
+RUN mkdir -p /var/log/cat-flap
+
 RUN mkdir /data
 
 RUN chown app:app /var/log/cat-flap
