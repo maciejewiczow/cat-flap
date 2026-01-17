@@ -40,9 +40,9 @@ RUN uv sync --directory ./scripts --no-dev
 RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-install-project --no-dev
+    uv sync --no-dev
 
-RUN uv sync --directory $APP_SERVICE_NAME --no-dev --no-install-project
+RUN uv sync --directory $APP_SERVICE_NAME --no-dev
 
 USER app
 
