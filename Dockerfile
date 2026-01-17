@@ -11,6 +11,8 @@ COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
 ENV UV_TARGET_PLATFORM=linux-aarch64
+ENV UV_BREAK_SYSTEM_PACKAGES=true
+# ENV UV_PROJECT_ENVIRONMENT=/usr/lib/python3/dist-packages
 
 RUN uv sync --directory ./scripts --no-dev
 RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
@@ -50,6 +52,7 @@ RUN chown app:app /data
 USER app
 
 COPY --from=build --chown=app:app /source /source
+COPY --from=build /usr /usr
 
 WORKDIR /source
 
