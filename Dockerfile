@@ -55,4 +55,4 @@ WORKDIR /source
 
 ENV COMMAND="source .venv/bin/activate && python ${APP_SERVICE_NAME}/main.py"
 
-CMD ["/bin/bash", "-c $COMMAND"]
+CMD ["/bin/bash", "-c", "$COMMAND"]
