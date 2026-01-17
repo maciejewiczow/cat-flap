@@ -3,7 +3,7 @@ ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
 
-RUN apt update && apt install build-essential -y
+RUN apt update && apt install build-essential libcap-dev -y
 
 WORKDIR /source
 
