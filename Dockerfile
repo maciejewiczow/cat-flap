@@ -15,6 +15,8 @@ ENV UV_TARGET_PLATFORM=linux-aarch64
 RUN uv sync --directory ./scripts --no-dev
 RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
 
+RUN uv venv --system-site-packages
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev
 
