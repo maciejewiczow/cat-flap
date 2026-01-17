@@ -53,6 +53,6 @@ COPY --from=build --chown=app:app /source /source
 
 WORKDIR /source
 
-ENV COMMAND="uv run ${APP_SERVICE_NAME}/main.py"
+ENV COMMAND="source .venv/bin/activate && python ${APP_SERVICE_NAME}/main.py"
 
 CMD $COMMAND
