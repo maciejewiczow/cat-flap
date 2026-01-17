@@ -11,7 +11,6 @@ COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
 ENV UV_TARGET_PLATFORM=linux-aarch64
-ENV PYTHONPATH="/usr/lib/python3/dist-packages:${PYTHONPATH}"
 
 RUN uv sync --directory ./scripts --no-dev
 RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
@@ -27,7 +26,6 @@ FROM dtcooper/raspberrypi-os:python3.13-bookworm
 ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
-ENV PYTHONPATH="/usr/lib/python3/dist-packages:${PYTHONPATH}"
 
 RUN adduser \
     --disabled-password \
