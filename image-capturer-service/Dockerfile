@@ -1,4 +1,4 @@
-FROM mafciejewiczow/cat-flap-image-capturer:base
+FROM mafciejewiczow/cat-flap-image-capturer-base-app:master
 
 USER root
 
