@@ -8,7 +8,7 @@ RUN apt install libcamera-tools libcamera-apps-lite -y
 RUN apt install libcap-dev libcamera-dev -y
 RUN apt install libatlas-base-dev libopenjp2-7 libkms++-dev libfmt-dev libdrm-dev -y
 RUN pip install rpi-libcamera -C setup-args="-Dversion=unknown"
-RUN pip install rpi-kms
+RUN pip install rpi-kms -C setup-args="-Drepository=https://github.com/tomba/kmsxx.git" for the repository and -C setup-args="-Drevision=master"
 
 RUN apt install -y python3-picamera2 --no-install-recommends
 RUN pip install picamera2
