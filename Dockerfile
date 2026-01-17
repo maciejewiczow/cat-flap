@@ -33,6 +33,8 @@ RUN adduser \
     --no-create-home \
     app
 
+WORKDIR /
+
 RUN chown -R app:app /source
 
 RUN mkdir -p $SOCKETS_DIR
