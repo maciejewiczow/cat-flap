@@ -6,5 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "shared",
     "picamera2",
+    "rpi-libcamera",
+    "rpi-kms",
     "numpy",
 ]

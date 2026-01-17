@@ -5,7 +5,6 @@ from shared.logging import get_logger
 from shared.main_fn import worker_main
 from shared.messages import ImageCapturedMessage, StartCaptureMessage
 import picamera2  # pyright: ignore[reportMissingImports]
-import numpy as np
 from PIL import Image
 
 log = get_logger("image-capturer-service")

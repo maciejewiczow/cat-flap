@@ -10,16 +10,6 @@ COPY ./shared ./shared
 COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    app
-
-RUN chown -R app:app /source
-
 ENV UV_TARGET_PLATFORM=linux-aarch64
 
 RUN uv sync --directory ./scripts --no-dev
@@ -30,10 +20,20 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 RUN uv sync --directory $APP_SERVICE_NAME --no-dev
 
-FROM python:3.13.11-slim
+FROM dtcooper/raspberrypi-os:python3.13-bookworm
 ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
+
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    app
+
+RUN chown -R app:app /source
 
 RUN mkdir -p $SOCKETS_DIR
 
