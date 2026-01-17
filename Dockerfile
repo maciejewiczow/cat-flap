@@ -34,14 +34,13 @@ RUN chown app:app /var/run/cat-flap/sockets
 
 RUN chown app:app /data
 
-RUN uv sync --directory --no-dev ./scripts
+RUN uv sync --directory ./scripts --no-dev
 RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
     uv sync --locked --no-install-project --no-dev
 
-RUN uv sync --directory $APP_SERVICE_NAME --no-dev
+RUN uv sync --directory $APP_SERVICE_NAME --no-dev --no-install-project
 
 USER app
 
