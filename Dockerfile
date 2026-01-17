@@ -1,7 +1,6 @@
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS build
 ARG APP_SERVICE_NAME
-
-ENV SOCKETS_DIR=/var/run/cat-flap/sockets
+ARG SOCKETS_DIR=/var/run/cat-flap/sockets
 
 RUN apt update && apt install build-essential libcap-dev -y
 
@@ -22,7 +21,7 @@ RUN adduser \
 
 RUN chown -R app:app /source
 
-RUN mkdir -p /var/run/cat-flap/sockets
+RUN mkdir -p $SOCKETS_DIR
 
 RUN mkdir -p /var/log/cat-flap
 
@@ -48,6 +47,9 @@ USER app
 
 FROM python:3.13.11-slim
 ARG APP_SERVICE_NAME
+ARG SOCKETS_DIR=/var/run/cat-flap/sockets
+
+ENV SOCKETS_DIR=$SOCKETS_DIR
 
 COPY --from=build --chown=app:app /source /source
 
