@@ -61,6 +61,8 @@ jobs:
           push: true
           tags: ${{ steps.meta-final-image.outputs.tags }}
           labels: ${{ steps.meta-final-image.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Extract metadata (tags, labels) for Docker app base image
         if: ${{ steps.has-dockerfile.outcome == 'success' }}
@@ -81,6 +83,8 @@ jobs:
           push: true
           tags: ${{ steps.meta-with-descendant.outputs.tags }}
           labels: ${{ steps.meta-with-descendant.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build service Docker image
         if: ${{ steps.has-dockerfile.outcome == 'success' }}
@@ -92,3 +96,5 @@ jobs:
           push: true
           tags: ${{ steps.meta-final-image.outputs.tags }}
           labels: ${{ steps.meta-final-image.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
