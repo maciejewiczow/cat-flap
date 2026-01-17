@@ -47,9 +47,11 @@ USER app
 FROM ghcr.io/astral-sh/uv:alpine3.22
 ARG APP_SERVICE_NAME
 
+WORKDIR /source
+
 COPY --from=build --chown=app:app ./$APP_SERVICE_NAME ./$APP_SERVICE_NAME
 COPY --from=build --chown=app:app ./shared ./shared
-COPY --from=build --chown=app:app pyproject.toml ./pyproject.toml
+COPY --from=build --chown=app:app ./pyproject.toml ./pyproject.toml
 
 ENV COMMAND="uv run ${APP_SERVICE_NAME}/main.py"
 
