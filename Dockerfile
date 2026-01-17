@@ -11,11 +11,12 @@ COPY ./scripts ./scripts
 COPY pyproject.toml ./pyproject.toml.source
 
 ENV UV_TARGET_PLATFORM=linux-aarch64
+ENV PYTHONPATH="/usr/lib/python3/dist-packages:${PYTHONPATH}"
 
 RUN uv sync --directory ./scripts --no-dev
 RUN uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME
 
-RUN uv venv --system-site-packages
+RUN uv venv -p /usr/lib/python3/dist-packages --system-site-packages
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev
