@@ -37,7 +37,6 @@ jobs:
             APP_SERVICE_NAME=${{matrix.service.name}}-service
           file: rpi-trixie.Dockerfile
           push: true
-          tags: mafciejewiczow/raspberrypi-os
-          labels: python3.13-trixie
+          tags: mafciejewiczow/raspberrypi-os:python3.13-trixie
           cache-from: type=gha
           cache-to: type=gha,mode=max
