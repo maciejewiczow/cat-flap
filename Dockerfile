@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 RUN uv sync --directory $APP_SERVICE_NAME --no-dev
 
-FROM dtcooper/raspberrypi-os:python3.13-bookworm
+FROM mafciejewiczow/raspberrypi-os:python3.13-trixie
 ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
