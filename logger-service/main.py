@@ -23,9 +23,8 @@ async def handle_messages(hub: WorkerMessageHub):
                 log.debug(
                     f"Received message of type {type(message).__name__}: {message}",
                 )
-                continue
-
-        log.warning(f"Received an object not of the Message class: {message}")
+            case _:
+                log.warning(f"Received an object not of the Message class: {message}")
 
 
 if __name__ == "__main__":
