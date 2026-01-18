@@ -12,7 +12,6 @@ COPY pyproject.toml ./pyproject.toml.source
 
 ENV UV_TARGET_PLATFORM=linux-aarch64
 ENV UV_BREAK_SYSTEM_PACKAGES=true
-# ENV UV_PROJECT_ENVIRONMENT=/usr/lib/python3/dist-packages
 
 RUN uv sync --directory ./scripts --no-dev && \
     uv run --directory ./scripts create-temp-pyproject.py ../pyproject.toml.source $APP_SERVICE_NAME &&\
@@ -27,25 +26,11 @@ ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
 
-# RUN adduser \
-#     --disabled-password \
-#     --gecos "" \
-#     --home "/nonexistent" \
-#     --shell "/sbin/nologin" \
-#     --no-create-home \
-#     app
-
 RUN mkdir -p $SOCKETS_DIR && \
     mkdir -p /var/log/cat-flap && \
-    mkdir /data && \
-    chown app:app /var/log/cat-flap && \
-    chown app:app $SOCKETS_DIR && \
-    chown app:app /data
+    mkdir /data
 
-# USER app
-
-COPY --from=build --chown=app:app /source /source
-# COPY --from=build /usr /usr
+COPY --from=build /source /source
 
 WORKDIR /source
 
