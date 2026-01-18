@@ -27,13 +27,13 @@ ARG APP_SERVICE_NAME
 
 ENV SOCKETS_DIR=/var/run/cat-flap/sockets
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    app
+# RUN adduser \
+#     --disabled-password \
+#     --gecos "" \
+#     --home "/nonexistent" \
+#     --shell "/sbin/nologin" \
+#     --no-create-home \
+#     app
 
 RUN mkdir -p $SOCKETS_DIR && \
     mkdir -p /var/log/cat-flap && \
@@ -42,7 +42,7 @@ RUN mkdir -p $SOCKETS_DIR && \
     chown app:app $SOCKETS_DIR && \
     chown app:app /data
 
-USER app
+# USER app
 
 COPY --from=build --chown=app:app /source /source
 # COPY --from=build /usr /usr
