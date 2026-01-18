@@ -52,7 +52,7 @@ RUN chown app:app /data
 USER app
 
 COPY --from=build --chown=app:app /source /source
-COPY --from=build /usr /usr
+# COPY --from=build /usr /usr
 
 WORKDIR /source
 
