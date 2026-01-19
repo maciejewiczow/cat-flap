@@ -13,8 +13,15 @@ model: YOLO | None = None
 
 def init_worker():
     global model
-    model = YOLO("weights_ncnn_model")
-    model.predict("dummy.jpg", verbose=False)
+    try:
+        log.info("Initializing the model")
+        model = YOLO("weights_ncnn_model")
+        log.info("Initializied the model, now warming up...")
+        model.predict("dummy.jpg", verbose=False)
+        log.info("Warmup completed")
+    except:
+        log.exception("Error while trying to init the model")
+        raise
 
 
 def worker_predict(image):
@@ -24,6 +31,7 @@ def worker_predict(image):
         log.error("Tried to use model which was not initialized")
         raise RuntimeError("Model not initialized for prediction")
 
+    log.info("Running the inference")
     return model.predict(image)
 
 
