@@ -8,5 +8,6 @@ dependencies = [
     "gpiozero",
     "pigpio",
     "Adafruit-Blinka",
-    "adafruit-circuitpython-mcp3xxx"
+    "adafruit-circuitpython-mcp3xxx",
+    "rpi.gpio"
 ]
