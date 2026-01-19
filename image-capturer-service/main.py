@@ -31,6 +31,8 @@ async def handle_messages(hub: WorkerMessageHub):
                 try:
                     image = camera.capture_array("main")
 
+                    log.info("Captured an image, seding a message with it")
+
                     await hub.send(ImageCapturedMessage(image=Image.fromarray(image)))
                 except:  # noqa: E722
                     log.exception(
