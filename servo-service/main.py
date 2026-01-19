@@ -36,8 +36,12 @@ chan = AnalogIn(mcp, MCP.P0)
 
 
 async def report_voltage():
-    log.info(f"ADC Voltage: {chan.voltage}V")
-    await asyncio.sleep(0.5)
+    try:
+        while True:
+            log.info(f"ADC Voltage: {chan.voltage}V")
+            await asyncio.sleep(0.5)
+    except asyncio.CancelledError:
+        return
 
 
 async def handle_messages(hub: WorkerMessageHub):
