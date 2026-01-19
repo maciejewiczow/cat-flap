@@ -2,7 +2,7 @@ import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
-from ultralytics import YOLO  # pyright: ignore[reportPrivateImportUsage]
+from ultralytics import YOLO  # pyright: ignore[reportMissingImports, reportPrivateImportUsage]
 from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
 from shared.main_fn import worker_main
 
