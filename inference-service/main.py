@@ -7,6 +7,7 @@ from shared.utils.str_to_timedelta import timedelta_to_str
 from ultralytics import YOLO  # pyright: ignore[reportMissingImports, reportPrivateImportUsage]
 from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
 from shared.main_fn import worker_main
+from PIL.Image import Image
 
 log = get_logger("inference")
 
@@ -19,15 +20,13 @@ def init_worker():
     try:
         log.info("Initializing the model")
         model = YOLO("weights_ncnn_model")
-        log.info("Initializied the model, now warming up...")
-        model.predict("inference-service/dummy.jpg", verbose=False)
-        log.info("Warmup completed")
+        log.info("Initializied the model")
     except:
         log.exception("Error while trying to init the model")
         raise
 
 
-def worker_predict(image):
+def worker_predict(image: Image | None):
     global model
     global log
 
@@ -35,12 +34,25 @@ def worker_predict(image):
         log.error("Tried to use model which was not initialized")
         raise RuntimeError("Model not initialized for prediction")
 
-    log.info("Running the inference")
-    start = datetime.now()
-    result = model.predict(image)
-    log.info(f"Inference took {timedelta_to_str(datetime.now() - start)}")
+    try:
+        if image is None:
+            log.info("Warming up the worker")
+            start = datetime.now()
+            res = model.predict("inference-service/dummy.jpg", verbose=False)
+            log.info(
+                f"Warmup completed, took {timedelta_to_str(datetime.now() - start)}"
+            )
+            return res
 
-    return result
+        log.info("Running the inference")
+        start = datetime.now()
+        result = model.predict(image)
+        log.info(f"Inference took {timedelta_to_str(datetime.now() - start)}")
+
+        return result
+    except:
+        log.exception("An exception has occurred during warmup/prediction")
+        raise
 
 
 class ModelProcessor:
@@ -49,7 +61,11 @@ class ModelProcessor:
     def __init__(self):
         self.executor = ProcessPoolExecutor(max_workers=1, initializer=init_worker)
 
-    async def predict(self, image):
+    async def warmup(self):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self.executor, worker_predict, None)
+
+    async def predict(self, image: Image):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, worker_predict, image)
 
@@ -61,6 +77,8 @@ async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the inference service")
     processor = ModelProcessor()
     log.info("Model processor initialized")
+    await processor.warmup()
+    log.info("Model processor warmed up")
 
     async for message in hub.receive():
         match message:
