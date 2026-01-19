@@ -1,7 +1,9 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
+from shared.utils.str_to_timedelta import timedelta_to_str
 from ultralytics import YOLO  # pyright: ignore[reportMissingImports, reportPrivateImportUsage]
 from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
 from shared.main_fn import worker_main
@@ -13,6 +15,7 @@ model: YOLO | None = None
 
 def init_worker():
     global model
+    global log
     try:
         log.info("Initializing the model")
         model = YOLO("weights_ncnn_model")
@@ -26,13 +29,18 @@ def init_worker():
 
 def worker_predict(image):
     global model
+    global log
 
     if model is None:
         log.error("Tried to use model which was not initialized")
         raise RuntimeError("Model not initialized for prediction")
 
     log.info("Running the inference")
-    return model.predict(image)
+    start = datetime.now()
+    result = model.predict(image)
+    log.info(f"Inference took {timedelta_to_str(datetime.now() - start)}")
+
+    return result
 
 
 class ModelProcessor:
@@ -52,6 +60,7 @@ class ModelProcessor:
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the inference service")
     processor = ModelProcessor()
+    log.info("Model processor initialized")
 
     async for message in hub.receive():
         match message:
