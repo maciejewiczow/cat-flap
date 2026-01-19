@@ -6,5 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "shared",
     "gpiozero",
-    "pigpio"
+    "pigpio",
+    "Adafruit-Blinka",
+    "adafruit-circuitpython-mcp3xxx"
 ]

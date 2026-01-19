@@ -1,3 +1,4 @@
+import asyncio
 from os import environ
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
@@ -8,6 +9,11 @@ from shared.messages import (
 from shared.main_fn import worker_main
 from gpiozero import Servo
 from gpiozero.pins.pigpio import PiGPIOFactory
+import busio
+import digitalio
+import board
+import adafruit_mcp3xxx.mcp3008 as MCP
+from adafruit_mcp3xxx.analog_in import AnalogIn
 
 log = get_logger("servo")
 
@@ -20,9 +26,26 @@ servo = Servo(
     pin_factory=factory,
 )
 
+spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+
+cs = digitalio.DigitalInOut(board.D5)
+
+mcp = MCP.MCP3008(spi, cs)
+
+chan = AnalogIn(mcp, MCP.P0)
+
+
+async def report_voltage():
+    log.info(f"ADC Voltage: {chan.voltage}V")
+    await asyncio.sleep(0.5)
+
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the servo service")
+
+    loop = asyncio.get_event_loop()
+
+    loop.create_task(report_voltage())
 
     async for message in hub.receive():
         match message:
