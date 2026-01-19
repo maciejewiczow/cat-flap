@@ -20,7 +20,7 @@ def init_worker():
         log.info("Initializing the model")
         model = YOLO("weights_ncnn_model")
         log.info("Initializied the model, now warming up...")
-        model.predict("dummy.jpg", verbose=False)
+        model.predict("inference-service/dummy.jpg", verbose=False)
         log.info("Warmup completed")
     except:
         log.exception("Error while trying to init the model")
