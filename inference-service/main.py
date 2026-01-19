@@ -4,7 +4,7 @@ from datetime import datetime
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.utils.str_to_timedelta import timedelta_to_str
-from ultralytics import YOLO  # pyright: ignore[reportMissingImports, reportPrivateImportUsage]
+from ultralytics import YOLO  # pyright: ignore[reportMissingImports]
 from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
 from shared.main_fn import worker_main
 from PIL.Image import Image
@@ -68,9 +68,6 @@ class ModelProcessor:
     async def predict(self, image: Image):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, worker_predict, image)
-
-    def shutdown(self):
-        self.executor.shutdown()
 
 
 async def handle_messages(hub: WorkerMessageHub):

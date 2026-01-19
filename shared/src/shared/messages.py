@@ -10,12 +10,12 @@ class Message:
 
 
 @dataclass
-class CloseFlapMessage(Message):
+class LockFlapMessage(Message):
     pass
 
 
 @dataclass
-class OpenFlapMessage(Message):
+class UnlockFlapMessage(Message):
     pass
 
 
