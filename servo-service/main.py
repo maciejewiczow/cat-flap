@@ -13,7 +13,7 @@ import digitalio
 import board
 import adafruit_mcp3xxx.mcp3008 as MCP
 from adafruit_mcp3xxx.analog_in import AnalogIn
-from .servo import FT90RServo
+from .src.servo import FT90RServo
 
 log = get_logger("servo")
 
