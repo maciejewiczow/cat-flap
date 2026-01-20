@@ -13,3 +13,6 @@ dependencies = [
 exclude-dependencies = [
     "opencv-python",
 ]
+override-dependencies = [
+    "opencv-python ; sys_platform == 'never'",
+]
