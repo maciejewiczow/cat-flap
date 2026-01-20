@@ -80,6 +80,9 @@ async def handle_messages(hub: WorkerMessageHub):
                     )
 
                     if max_prey_prob > 0.5:
+                        log.info(
+                            f"Prey detected with high probability ({max_prey_prob:.2%}), locking the flap"
+                        )
                         await hub.send(LockFlapMessage())
 
                         if unlock_flap_task is not None:
