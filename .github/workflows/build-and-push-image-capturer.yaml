@@ -24,6 +24,6 @@ jobs:
       - name: Build image-capturer service
         uses: ./.github/actions/build-service
         with:
-          service-name: image-capturer-service
+          service-name: image-capturer
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

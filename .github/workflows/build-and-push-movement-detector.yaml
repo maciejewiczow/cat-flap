@@ -24,6 +24,6 @@ jobs:
       - name: Build movement-detector service
         uses: ./.github/actions/build-service
         with:
-          service-name: movement-detector-service
+          service-name: movement-detector
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

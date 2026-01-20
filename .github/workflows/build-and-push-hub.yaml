@@ -24,6 +24,6 @@ jobs:
       - name: Build hub service
         uses: ./.github/actions/build-service
         with:
-          service-name: hub-service
+          service-name: hub
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}
