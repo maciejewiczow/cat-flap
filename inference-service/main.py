@@ -4,7 +4,7 @@ from datetime import datetime
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.utils.str_to_timedelta import timedelta_to_str
-from ultralytics import YOLO  # pyright: ignore[reportMissingImports]
+from ultralytics import YOLO  # pyright: ignore[reportPrivateImportUsage, reportMissingImports]
 from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
 from shared.main_fn import worker_main
 from PIL.Image import Image
