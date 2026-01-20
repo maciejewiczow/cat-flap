@@ -20,6 +20,21 @@ class UnlockFlapMessage(Message):
 
 
 @dataclass
+class FlapLockedMessage(Message):
+    pass
+
+
+@dataclass
+class FlapUnlockedMessage(Message):
+    pass
+
+
+@dataclass
+class FlapInTransitionMessage(Message):
+    pass
+
+
+@dataclass
 class MotionDetectedMessage(Message):
     pass
 

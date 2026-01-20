@@ -19,7 +19,7 @@ def init_worker():
     global log
     try:
         log.info("Initializing the model")
-        model = YOLO("weights_ncnn_model")
+        model = YOLO("weights_ncnn_model", task="detect")
         log.info("Initializied the model")
     except:
         log.exception("Error while trying to init the model")
