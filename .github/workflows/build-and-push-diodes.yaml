@@ -19,6 +19,8 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
       - name: Build diodes service
         uses: ./.github/actions/build-service
         with:
