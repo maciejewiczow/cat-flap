@@ -7,22 +7,20 @@ from shared.messages import (
     UnlockFlapMessage,
 )
 from shared.main_fn import worker_main
-from gpiozero import Servo
 from gpiozero.pins.pigpio import PiGPIOFactory
 import busio
 import digitalio
 import board
 import adafruit_mcp3xxx.mcp3008 as MCP
 from adafruit_mcp3xxx.analog_in import AnalogIn
+from .servo import FT90RServo
 
 log = get_logger("servo")
 
 factory = PiGPIOFactory()
 
-servo = Servo(
+servo = FT90RServo(
     int(environ.get("SERVO_PIN", 12)),
-    min_pulse_width=0.5 / 1000,
-    max_pulse_width=2.5 / 1000,
     pin_factory=factory,
 )
 
@@ -35,30 +33,61 @@ mcp = MCP.MCP3008(spi, cs)
 chan = AnalogIn(mcp, MCP.P0)
 
 
-async def report_voltage():
+async def wait_for_unlock():
     try:
-        while True:
-            log.info(f"ADC Voltage: {chan.voltage}V")
-            await asyncio.sleep(0.5)
+        while chan.voltage > 0.01:
+            await asyncio.sleep(0.1)
+
+        servo.stop()
+    except asyncio.CancelledError:
+        return
+
+
+async def wait_for_lock():
+    try:
+        while chan.voltage < 3.2:
+            await asyncio.sleep(0.1)
+
+        servo.stop()
     except asyncio.CancelledError:
         return
 
 
 async def handle_messages(hub: WorkerMessageHub):
     log.info("Starting the servo service")
+    servo.value = 1.0
+    log.info("Initially unlocked the flap")
 
     loop = asyncio.get_event_loop()
 
-    loop.create_task(report_voltage())
+    wait_for_lock_task: asyncio.Task[None] | None = None
+    wait_for_unlock_task: asyncio.Task[None] | None = None
 
     async for message in hub.receive():
         match message:
             case LockFlapMessage():
                 log.info("Initiating flap locking")
-                servo.value = -1.0
+                servo.clockwise()
+
+                if wait_for_lock_task is None or wait_for_lock_task.done():
+                    if wait_for_unlock_task is not None:
+                        wait_for_unlock_task.cancel()
+                        log.info("Cancelled pending flap unlock")
+                        wait_for_unlock_task = None
+
+                    wait_for_lock_task = loop.create_task(wait_for_lock())
+
             case UnlockFlapMessage():
                 log.info("Initiating flap unlocking")
-                servo.value = 1.0
+                servo.counter_clockwise()
+
+                if wait_for_unlock_task is None or wait_for_unlock_task.done():
+                    if wait_for_lock_task is not None:
+                        wait_for_lock_task.cancel()
+                        log.info("Cancelled pending flap lock")
+                        wait_for_lock_task = None
+
+                    wait_for_unlock_task = loop.create_task(wait_for_unlock())
 
 
 if __name__ == "__main__":
