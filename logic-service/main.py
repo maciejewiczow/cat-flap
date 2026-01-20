@@ -42,6 +42,7 @@ async def wait_for_lockout(hub: WorkerMessageHub):
 
 
 async def handle_messages(hub: WorkerMessageHub):
+    log.info("Starting the logic service")
     door_open = False
     capture_task: asyncio.Task[None] | None = None
     unlock_flap_task: asyncio.Task[None] | None = None
