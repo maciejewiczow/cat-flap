@@ -24,6 +24,6 @@ jobs:
       - name: Build logger service
         uses: ./.github/actions/build-service
         with:
-          stervice-name: logger-service
+          service-name: logger-service
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

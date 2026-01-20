@@ -24,6 +24,6 @@ jobs:
       - name: Build logic service
         uses: ./.github/actions/build-service
         with:
-          stervice-name: logic-service
+          service-name: logic-service
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

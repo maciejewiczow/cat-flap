@@ -24,6 +24,6 @@ jobs:
       - name: Build image-saver service
         uses: ./.github/actions/build-service
         with:
-          stervice-name: image-saver-service
+          service-name: image-saver-service
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

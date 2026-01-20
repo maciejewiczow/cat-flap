@@ -24,6 +24,6 @@ jobs:
       - name: Build inference service
         uses: ./.github/actions/build-service
         with:
-          stervice-name: inference-service
+          service-name: inference-service
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}
