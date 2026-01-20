@@ -1,0 +1,6 @@
+{
+  "name": "Service build action",
+  "fileTemplateName": "build-and-push-{{name}}.yaml",
+  "onlyAsPartOfGroup": false,
+  "disabled": false
+}

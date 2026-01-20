@@ -1,0 +1,90 @@
+name: Build and publish a service image
+description: Build and publish a service image to dockerhub
+
+inputs:
+  service-name:
+    required: true
+    description: The path of the service to be built
+  dockerhub-username:
+    required: true
+    description: Username that will be used to login into dockerhub
+  dockerhub-password:
+    required: true
+    description: Password that will be used to login into dockerhub
+
+runs:
+  using: composite
+  steps:
+    - name: Check out the repo
+      uses: actions/checkout@v5
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ inputs.dockerhub-username }}
+        password: ${{ inputs.dockerhub-password }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Check for service-specific dockerfile
+      shell: bash
+      id: has-dockerfile
+      run: ls ./${{ inputs.service-name }}-service/Dockerfile
+      continue-on-error: true
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta-final-image
+      uses: docker/metadata-action@v4
+      with:
+        images: mafciejewiczow/cat-flap-${{ inputs.service-name }}-svc
+
+    - name: Build the Docker image
+      if: ${{ steps.has-dockerfile.outcome == 'failure' }}
+      id: build-and-push-only
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        build-args: |
+          APP_SERVICE_NAME=${{ inputs.service-name }}-service
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta-final-image.outputs.tags }}
+        labels: ${{ steps.meta-final-image.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Extract metadata (tags, labels) for Docker app base image
+      if: ${{ steps.has-dockerfile.outcome == 'success' }}
+      id: meta-with-descendant
+      uses: docker/metadata-action@v4
+      with:
+        images: mafciejewiczow/cat-flap-${{ inputs.service-name }}-base-app
+
+    - name: Build base Docker image
+      if: ${{ steps.has-dockerfile.outcome == 'success' }}
+      id: build-base-image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        build-args: |
+          APP_SERVICE_NAME=${{ inputs.service-name }}-service
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta-with-descendant.outputs.tags }}
+        labels: ${{ steps.meta-with-descendant.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build service Docker image
+      if: ${{ steps.has-dockerfile.outcome == 'success' }}
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./${{ inputs.service-name }}-service/Dockerfile
+        push: true
+        tags: ${{ steps.meta-final-image.outputs.tags }}
+        labels: ${{ steps.meta-final-image.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

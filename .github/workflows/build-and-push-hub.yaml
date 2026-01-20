@@ -1,0 +1,27 @@
+name: Build and publish hub service image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "*"
+      - "shared/**"
+      - "hub-service/**"
+  workflow_dispatch:
+
+jobs:
+  push_to_registry:
+    name: Build
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Build hub service
+        uses: ./.github/actions/build-service
+        with:
+          stervice-name: hub-service
+          dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}
