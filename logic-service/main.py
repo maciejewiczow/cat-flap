@@ -76,7 +76,7 @@ async def handle_messages(hub: WorkerMessageHub):
 
                 if len(prey_classes) > 0:
                     max_prey_prob = max(
-                        *(prob for _, prob in prey_classes),
+                        (prob for _, prob in prey_classes),
                     )
 
                     if max_prey_prob > 0.5:
