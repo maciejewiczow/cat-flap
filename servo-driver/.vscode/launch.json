@@ -5,7 +5,7 @@
             "preLaunchTask": "rust: cargo build",
             "type": "probe-rs-debug",
             "request": "launch",
-            "name": "rp2040-project",
+            "name": "servo-driver debug",
             "cwd": "${workspaceFolder}",
             "chip": "rp2040",
             "connectUnderReset": false,

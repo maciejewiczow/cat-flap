@@ -1,5 +1,6 @@
 use embassy_rp::gpio::Output;
-use embassy_time::Timer;
+use embassy_time::{Duration, Timer};
+use portable_atomic::{AtomicU16, Ordering};
 
 use crate::utils::interpolate;
 
@@ -17,33 +18,41 @@ enum Direction {
     Counterclockwise,
 }
 
+pub const ADC_MIN_VALUE: u16 = 30;
+pub const ADC_MAX_VALUE: u16 = 4095;
+
+pub const MIN_DEG_VALUE: f32 = 0.;
+pub const MAX_DEG_VALUE: f32 = 270.;
+
 pub struct Stepper<'a> {
     step_mode: StepMode,
-    target: u64,
+    target: u16,
     direction: Direction,
     step_delay: u64, // microseconds between steps
-    number_of_steps: u64,
-    step_number: u64,
+    number_of_steps: u16,
+    step_number: u16,
     pin1: Output<'a>,
     pin2: Output<'a>,
     pin3: Output<'a>,
     pin4: Output<'a>,
+    adc_value: &'a AtomicU16,
 }
 
 impl<'a> Stepper<'a> {
     pub fn new_four_wire(
-        number_of_steps: u64,
+        number_of_steps: u16,
         pin1: Output<'a>,
         pin2: Output<'a>,
         pin3: Output<'a>,
         pin4: Output<'a>,
         mode: StepMode,
+        adc_value: &'a AtomicU16,
     ) -> Self {
-        Stepper {
+        let mut s = Stepper {
             step_mode: mode,
             target: 0,
             direction: Direction::Clockwise,
-            step_delay: 0,
+            step_delay: 10,
             number_of_steps: match mode {
                 StepMode::HalfStep => number_of_steps * 2,
                 StepMode::FullStep => number_of_steps,
@@ -53,60 +62,80 @@ impl<'a> Stepper<'a> {
             pin2,
             pin3,
             pin4,
-        }
+            adc_value,
+        };
+
+        s.step_number = interpolate(
+            s.get_adc_value() as f32,
+            (ADC_MIN_VALUE as f32, ADC_MAX_VALUE as f32),
+            (0., s.get_adjusted_number_of_steps() as f32),
+        ) as u16;
+
+        s
     }
 }
 
 impl<'a> Stepper<'a> {
     /// Sets the speed in revolutions per minute (RPM)
     pub fn set_speed(&mut self, speed_rpm: u16) {
-        if speed_rpm != 0 {
+        if speed_rpm > 0 {
             // Calculate delay in microseconds: 60 seconds * 1,000,000 microseconds /
             // (steps per revolution * RPM)
-            self.step_delay = 60_000_000 / (self.number_of_steps * speed_rpm as u64);
+            self.step_delay = 60_000_000 / ((self.number_of_steps * speed_rpm) as u64);
         }
     }
 
-    pub fn is_running(&self) -> bool {
-        self.target != self.step_number
+    pub fn is_running(&mut self) -> bool {
+        self.target.abs_diff(self.get_adc_value()) > 15
     }
 
-    pub fn set_target(&mut self, target: u64) {
-        self.direction = if target > self.target {
+    fn get_adjusted_number_of_steps(&self) -> u16 {
+        match self.step_mode {
+            StepMode::HalfStep => self.number_of_steps / 2,
+            StepMode::FullStep => self.number_of_steps,
+        }
+    }
+
+    pub fn set_target(&mut self, new_target: u16) {
+        let val = interpolate(
+            new_target as f32,
+            (0., self.get_adjusted_number_of_steps() as f32),
+            (ADC_MIN_VALUE as f32, ADC_MAX_VALUE as f32),
+        ) as u16;
+
+        self.direction = if val > self.target {
             Direction::Clockwise
         } else {
             Direction::Counterclockwise
         };
 
-        self.target = target;
+        self.target = val;
     }
 
     pub fn set_target_deg(&mut self, target: f32) {
-        self.set_target(interpolate(target, (0., 360.), (0., self.number_of_steps as f32)) as u64);
+        self.set_target(interpolate(
+            target,
+            (MIN_DEG_VALUE, MAX_DEG_VALUE),
+            (0., self.get_adjusted_number_of_steps() as f32),
+        ) as u16);
+    }
+
+    fn get_adc_value(&mut self) -> u16 {
+        self.adc_value.load(Ordering::Relaxed)
     }
 
     pub async fn run(&mut self) {
         while self.is_running() {
             self.run_step();
-            Timer::after_micros(self.step_delay).await;
+
+            Timer::after(Duration::from_micros(self.step_delay)).await;
         }
 
         self.reset_pins();
     }
 
-    // pub async fn run_cb<TFunc: FnMut() -> bool>(&mut self, mut step_callback: TFunc) {
-    //     let mut should_continue = true;
-    //     while self.is_running() && should_continue {
-    //         self.run_step();
-    //         should_continue = step_callback();
-    //         Timer::after_micros(self.step_delay).await;
-    //     }
-
-    //     self.reset_pins();
-    // }
-
-    pub fn stop(&mut self) {
-        self.target = self.step_number;
+    pub async fn stop(&mut self) {
+        self.target = self.get_adc_value();
         self.reset_pins();
     }
 

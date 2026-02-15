@@ -20,6 +20,25 @@
 				"showReuseMessage": false,
 				"clear": false
 			}
+		},
+		{
+			"type": "cargo",
+			"command": "flash --release --chip rp2040",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": {
+				"kind": "build",
+			},
+			"label": "rust: cargo build and flash release",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false
+			}
 		}
 	]
 }

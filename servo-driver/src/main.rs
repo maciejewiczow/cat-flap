@@ -4,41 +4,61 @@
 mod stepper;
 mod utils;
 
+use defmt::Debug2Format;
+
+use crate::{
+    stepper::{ADC_MAX_VALUE, ADC_MIN_VALUE, MAX_DEG_VALUE, MIN_DEG_VALUE},
+    utils::interpolate,
+};
 use assign_resources::assign_resources;
 use defmt::*;
-use embassy_executor::Spawner;
+use embassy_executor::{Executor, Spawner};
 use embassy_futures::select::{Either3, select3};
-use embassy_rp::Peri;
-use embassy_rp::gpio::{Level, Output};
 #[allow(unused_imports)]
-use embassy_rp::peripherals::{self, I2C1, PIN_2, PIN_3, PIN_6, PIN_7, PIN_10, PIN_11};
+use embassy_rp::peripherals::{
+    self, ADC, I2C1, PIN_2, PIN_3, PIN_6, PIN_7, PIN_10, PIN_11, PIN_28,
+};
+use embassy_rp::{
+    Peri, adc,
+    gpio::{Level, Output, Pull},
+    multicore::{Stack, spawn_core1},
+};
 use embassy_rp::{bind_interrupts, i2c, i2c_slave};
-use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
-use embassy_sync::channel::{Channel, Receiver, Sender};
-use embassy_sync::mutex::Mutex;
-use embassy_sync::signal;
+use embassy_sync::{
+    blocking_mutex::raw::ThreadModeRawMutex,
+    channel::{Channel, Receiver, Sender},
+    mutex::Mutex,
+    signal,
+};
 use embassy_time::Timer;
-use portable_atomic::Ordering;
-use portable_atomic::{AtomicU8, AtomicU16};
+use portable_atomic::{AtomicU8, AtomicU16, Ordering};
 use static_cell::StaticCell;
 use stepper::{StepMode, Stepper};
 use zerocopy::TryFromBytes;
+
 use {defmt_rtt as _, panic_probe as _};
+
+type RawMutexUsed = ThreadModeRawMutex;
 
 bind_interrupts!(struct Irqs {
     I2C1_IRQ => i2c::InterruptHandler<I2C1>;
+    ADC_IRQ_FIFO => adc::InterruptHandler;
 });
 
 const DEV_ADDR: u16 = 0x42;
 
 assign_resources! {
-    stepper: StepperPins {
+    stepper: StepperResources {
         pin1: PIN_6,
         pin2: PIN_7,
         pin3: PIN_10,
         pin4: PIN_11,
     },
-    i2c: I2CPins {
+    adc_writer: AdcResources {
+        adc: ADC,
+        adc_pin: PIN_28,
+    },
+    i2c: I2CResources {
         i2c1: I2C1,
         sda: PIN_2,
         scl: PIN_3,
@@ -46,14 +66,16 @@ assign_resources! {
 }
 
 #[derive(TryFromBytes)]
+#[repr(C)]
 struct RunToDegArgs {
     deg: f32,
     timeout: u64,
 }
 
 #[derive(TryFromBytes)]
+#[repr(C)]
 struct RunToStepArgs {
-    step: u64,
+    step: u16,
     timeout: u64,
 }
 
@@ -89,10 +111,15 @@ const ERROR_SERVO_STUCK: u8 = 0b01;
 /// bit 1 - invalid command - ex. 0b10
 static ERROR_VALUE: AtomicU8 = AtomicU8::new(0);
 
+const STEPPER_STATUS_BIT: u8 = 0b01;
+
+/// Stepper status
+static STEPPER_STATUS: AtomicU8 = AtomicU8::new(0);
+
 #[embassy_executor::task]
 async fn i2c_task(
-    p: I2CPins,
-    sender: Sender<'static, CriticalSectionRawMutex, Command, CHANNEL_BUFFER_SIZE>,
+    p: I2CResources,
+    sender: Sender<'static, RawMutexUsed, Command, CHANNEL_BUFFER_SIZE>,
 ) {
     let mut config = i2c_slave::Config::default();
     config.addr = DEV_ADDR;
@@ -134,10 +161,14 @@ async fn i2c_task(
                             match SetSpeedArgs::try_read_from_bytes(args) {
                                 Ok(speed_arg) => {
                                     info!("Setting the speed to {} RMP", speed_arg.speed);
+                                    ERROR_VALUE.and(!ERROR_INVALID_COMMAND, Ordering::Relaxed);
                                     sender.send(Command::SetSpeed(speed_arg.speed)).await;
                                 }
-                                Err(_) => {
-                                    info!("Error parsing the set speed command args");
+                                Err(e) => {
+                                    info!(
+                                        "Error parsing the set speed command args: {}",
+                                        Debug2Format(&e)
+                                    );
                                     ERROR_VALUE.or(ERROR_INVALID_COMMAND, Ordering::Relaxed);
                                 }
                             }
@@ -150,10 +181,14 @@ async fn i2c_task(
                                         "Running the stepper to {} deg with timeout = {}ms",
                                         data.deg, data.timeout
                                     );
+                                    ERROR_VALUE.and(!ERROR_INVALID_COMMAND, Ordering::Relaxed);
                                     sender.send(Command::RunToDeg(data)).await
                                 }
-                                Err(_) => {
-                                    info!("Error parsing the run to degree command args");
+                                Err(e) => {
+                                    info!(
+                                        "Error parsing the run to degree command args: {}",
+                                        Debug2Format(&e)
+                                    );
 
                                     ERROR_VALUE.or(ERROR_INVALID_COMMAND, Ordering::Relaxed);
                                 }
@@ -166,10 +201,14 @@ async fn i2c_task(
                                         "Running the stepper to {} steps with timeout = {}ms",
                                         data.step, data.timeout
                                     );
+                                    ERROR_VALUE.and(!ERROR_INVALID_COMMAND, Ordering::Relaxed);
                                     sender.send(Command::RunToStep(data)).await
                                 }
-                                Err(_) => {
-                                    info!("Error parsing the run to step command args");
+                                Err(e) => {
+                                    info!(
+                                        "Error parsing the run to step command args: {}",
+                                        Debug2Format(&e)
+                                    );
 
                                     ERROR_VALUE.or(ERROR_INVALID_COMMAND, Ordering::Relaxed);
                                 }
@@ -177,26 +216,34 @@ async fn i2c_task(
                         }
                         Ok((I2CCommand::Stop, _args)) => {
                             info!("Received a stop command, stopping the stepper");
+                            ERROR_VALUE.and(!ERROR_INVALID_COMMAND, Ordering::Relaxed);
                             sender.send(Command::Stop).await
                         }
                         Err(_) => {
                             info!("Unknown command received: {:x}", buf[0]);
-                            ERROR_VALUE.store(
-                                ERROR_VALUE.load(Ordering::Relaxed) | ERROR_INVALID_COMMAND,
-                                Ordering::Relaxed,
-                            );
+                            ERROR_VALUE.or(ERROR_INVALID_COMMAND, Ordering::Relaxed);
                         }
                     }
                 }
             }
-            Ok(i2c_slave::Command::WriteRead(len)) => {
-                info!("device received write read: {:x}", &buf[..len]);
+            Ok(i2c_slave::Command::WriteRead(_)) => {
+                // info!("device received write read: {:x}", &buf[..len]);
 
                 match dev
-                    .respond_and_fill(&[ERROR_VALUE.load(Ordering::Relaxed)], 0x00)
+                    .respond_and_fill(
+                        &[
+                            STEPPER_STATUS.load(Ordering::Relaxed),
+                            ERROR_VALUE.load(Ordering::Relaxed),
+                        ],
+                        0x00,
+                    )
                     .await
                 {
-                    Ok(read_status) => info!("response read status {:?}", read_status),
+                    Ok(_) =>
+                    /* info!("response read status {:?}", read_status) */
+                    {
+                        ()
+                    }
                     Err(e) => error!("error while responding {:?}", e),
                 }
             }
@@ -205,17 +252,17 @@ async fn i2c_task(
     }
 }
 
-static STOP_STEPPER_SIGNAL: signal::Signal<CriticalSectionRawMutex, ()> = signal::Signal::new();
+static STOP_STEPPER_SIGNAL: signal::Signal<RawMutexUsed, ()> = signal::Signal::new();
 static NEXT_STEPPER_SPEED: AtomicU16 = AtomicU16::new(0);
 
 enum RunTarget {
     Deg(f32),
-    Step(u64),
+    Step(u16),
 }
 
 #[embassy_executor::task]
 async fn run_stepper_task(
-    stepper_mutex: &'static Mutex<CriticalSectionRawMutex, Stepper<'static>>,
+    stepper_mutex: &'static Mutex<RawMutexUsed, Stepper<'static>>,
     target: RunTarget,
     timeout: u64,
 ) {
@@ -245,6 +292,8 @@ async fn run_stepper_task(
     }
 
     info!("Running the stepper");
+    STEPPER_STATUS.or(STEPPER_STATUS_BIT, Ordering::Relaxed);
+    ERROR_VALUE.and(!ERROR_SERVO_STUCK, Ordering::Relaxed);
 
     match select3(
         stepper.run(),
@@ -258,33 +307,71 @@ async fn run_stepper_task(
         }
         Either3::Second(_) => {
             info!("Stepper was stopped early");
-            stepper.stop();
+            stepper.stop().await;
         }
         Either3::Third(_) => {
             info!("The timeout has passed first");
-            stepper.stop();
-            ERROR_VALUE.store(0x1, Ordering::Relaxed);
+            stepper.stop().await;
+            ERROR_VALUE.or(ERROR_SERVO_STUCK, Ordering::Relaxed);
         }
     };
+
+    STEPPER_STATUS.and(!STEPPER_STATUS_BIT, Ordering::Relaxed);
+}
+
+static ADC_VALUE: AtomicU16 = AtomicU16::new(0);
+
+#[embassy_executor::task]
+async fn adc_monitor() {
+    loop {
+        let val = ADC_VALUE.load(Ordering::Relaxed);
+
+        info!(
+            "ADC value = {}, ({} deg)",
+            val,
+            interpolate(
+                val as f32,
+                (ADC_MIN_VALUE as f32, ADC_MAX_VALUE as f32),
+                (MIN_DEG_VALUE, MAX_DEG_VALUE)
+            )
+        );
+        Timer::after_millis(100).await;
+    }
+}
+
+#[embassy_executor::task]
+async fn adc_writer(p: AdcResources) {
+    let mut adc = adc::Adc::new(p.adc, Irqs, adc::Config::default());
+    let mut pin = adc::Channel::new_pin(p.adc_pin, Pull::None);
+
+    loop {
+        let val = adc.read(&mut pin).await.unwrap();
+
+        ADC_VALUE.store(val, Ordering::Relaxed);
+
+        Timer::after_millis(1).await;
+    }
 }
 
 #[embassy_executor::task]
 async fn stepper_controller(
     spawner: Spawner,
-    receiver: Receiver<'static, CriticalSectionRawMutex, Command, CHANNEL_BUFFER_SIZE>,
-    p: StepperPins,
+    receiver: Receiver<'static, RawMutexUsed, Command, CHANNEL_BUFFER_SIZE>,
+    p: StepperResources,
 ) {
     info!("Starting the stepper controller");
-    static STEPPER: StaticCell<Mutex<CriticalSectionRawMutex, Stepper<'static>>> =
-        StaticCell::new();
 
+    STEPPER_STATUS.store(0, Ordering::Relaxed);
+
+    static STEPPER: StaticCell<Mutex<RawMutexUsed, Stepper<'static>>> = StaticCell::new();
     let stepper_mutex = STEPPER.init(Mutex::new(Stepper::new_four_wire(
         2048,
         Output::new(p.pin1, Level::Low),
         Output::new(p.pin2, Level::Low),
         Output::new(p.pin3, Level::Low),
         Output::new(p.pin4, Level::Low),
-        StepMode::HalfStep,
+        StepMode::FullStep,
+        &ADC_VALUE,
     )));
 
     loop {
@@ -335,18 +422,36 @@ async fn stepper_controller(
     }
 }
 
-#[embassy_executor::main]
-async fn main(spawner: Spawner) {
+static mut CORE1_STACK: Stack<4096> = Stack::new();
+static EXECUTOR0: StaticCell<Executor> = StaticCell::new();
+static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
+
+#[cortex_m_rt::entry]
+unsafe fn main() -> ! {
     info!("Program start");
     let p = embassy_rp::init(Default::default());
 
     let r = split_resources!(p);
 
-    static CHANNEL: Channel<CriticalSectionRawMutex, Command, CHANNEL_BUFFER_SIZE> = Channel::new();
+    static CHANNEL: Channel<RawMutexUsed, Command, CHANNEL_BUFFER_SIZE> = Channel::new();
 
-    spawner.spawn(i2c_task(r.i2c, CHANNEL.sender())).unwrap();
+    spawn_core1(
+        p.CORE1,
+        unsafe { &mut *core::ptr::addr_of_mut!(CORE1_STACK) },
+        move || {
+            let executor1 = EXECUTOR1.init(Executor::new());
+            executor1.run(|spawner| {
+                spawner.spawn(adc_monitor()).unwrap();
+                spawner.spawn(adc_writer(r.adc_writer)).unwrap();
+                spawner
+                    .spawn(stepper_controller(spawner, CHANNEL.receiver(), r.stepper))
+                    .unwrap()
+            });
+        },
+    );
 
-    spawner
-        .spawn(stepper_controller(spawner, CHANNEL.receiver(), r.stepper))
-        .unwrap();
+    let executor0 = EXECUTOR0.init(Executor::new());
+    executor0.run(|spawner| {
+        spawner.spawn(i2c_task(r.i2c, CHANNEL.sender())).unwrap();
+    });
 }
