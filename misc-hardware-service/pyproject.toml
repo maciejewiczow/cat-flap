@@ -1,0 +1,10 @@
+[project]
+name = "misc-hardware-service"
+version = "0.1.0"
+description = "Hardware handling service for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "smbus3",
+    "shared",
+    "pigpio"
+]

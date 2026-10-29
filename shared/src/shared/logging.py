@@ -15,7 +15,7 @@ logging.basicConfig(
 
 
 def get_logger(name: str):
-    log = logging.getLogger(name)
+    log = logging.getLogger()
 
     dirname = environ.get("LOG_FOLDER", "/var/log/cat-flap")
 
@@ -30,4 +30,4 @@ def get_logger(name: str):
     file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     log.addHandler(file_handler)
 
-    return log
+    return logging.getLogger(name)

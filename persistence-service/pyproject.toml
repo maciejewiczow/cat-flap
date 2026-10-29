@@ -1,0 +1,9 @@
+[project]
+name = "persistence-service"
+version = "0.1.0"
+description = "Service responsible for persisting the state of the application for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "shared",
+    "pydantic"
+]

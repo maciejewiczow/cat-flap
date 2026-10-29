@@ -1,5 +1,8 @@
 import asyncio
 from os import environ
+
+from statemachine import State
+
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
@@ -7,12 +10,15 @@ from shared.messages import (
     DoorClosedMessage,
     DoorOpenedMessage,
     InferenceCompleteMessage,
-    LockFlapMessage,
+    EngageLockMessage,
+    MainButtonPressedMessage,
     MotionDetectedMessage,
     MotionEndedMessage,
     StartCaptureMessage,
-    UnlockFlapMessage,
+    DisengageLockMessage,
+    StateUpdate,
 )
+from shared.state import CatFlapStateMachine
 from shared.utils.str_to_timedelta import str_to_timedelta
 
 log = get_logger("logic")
@@ -21,54 +27,54 @@ capture_interval = str_to_timedelta(environ.get("CAPTURE_INTERVAL", "2s"))
 lockout_duration = str_to_timedelta(environ.get("LOCKOUT_DURATION", "20s"))
 
 
-async def produce_capture_events(hub: WorkerMessageHub):
-    try:
-        while True:
-            await hub.send(StartCaptureMessage())
-            await asyncio.sleep(
-                float(capture_interval.seconds)
-                + capture_interval.microseconds / 1_000_000
-            )
-    except asyncio.CancelledError:
-        return
+class StateUpdateListener:
+    def __init__(self, hub: WorkerMessageHub):
+        self.hub = hub
+
+    async def on_enter_state(
+        self, source: State, target: State, machine: CatFlapStateMachine
+    ):
+        log.info(f"State changed: {source} -> {target}")
+        await self.hub.send(StateUpdate(new_state=machine))
 
 
-async def wait_for_lockout(hub: WorkerMessageHub):
-    try:
-        await asyncio.sleep(lockout_duration.seconds)
-        await hub.send(UnlockFlapMessage())
-    except asyncio.CancelledError:
-        return
+class MessageSenderListener:
+    def __init__(self, hub: WorkerMessageHub):
+        self.hub = hub
+
+    async def on_enter_movement_detected(self, source: State):
+        await self.hub.send(StartCaptureMessage())
 
 
-async def handle_messages(hub: WorkerMessageHub):
+async def handle_messages(hub: WorkerMessageHub, state: CatFlapStateMachine):
     log.info("Starting the logic service")
-    door_open = False
-    capture_task: asyncio.Task[None] | None = None
-    unlock_flap_task: asyncio.Task[None] | None = None
 
-    loop = asyncio.get_event_loop()
+    state.add_listener(StateUpdateListener(hub))
+    state.add_listener(MessageSenderListener(hub))
 
     async for message in hub.receive():
         match message:
             case MotionDetectedMessage():
-                if not door_open:
-                    log.info("Door not opened, starting image capturing")
-                    capture_task = loop.create_task(produce_capture_events(hub))
-                elif capture_task is not None:
-                    capture_task.cancel()
+                state.movement()
 
             case MotionEndedMessage():
-                if capture_task is not None:
-                    capture_task.cancel()
+                state.movement_ended()
 
             case DoorOpenedMessage():
                 log.info("Detected that the door are open")
-                door_open = True
+                state.door_opened()
 
             case DoorClosedMessage():
                 log.info("Detected that the door were closed")
-                door_open = False
+                state.door_closed()
+
+            case MainButtonPressedMessage():
+                if state.is_disabled:
+                    log.info("Main button pressed, enabling the system")
+                    state.enable()
+                else:
+                    log.info("Main button pressed, disabling the system")
+                    state.disable()
 
             case InferenceCompleteMessage(detected_classes=classes):
                 log.info(f"Inference completed, classes detected: {classes}")
@@ -84,21 +90,15 @@ async def handle_messages(hub: WorkerMessageHub):
                         log.info(
                             f"Prey detected with high probability ({max_prey_prob:.2%}), locking the flap"
                         )
-                        await hub.send(LockFlapMessage())
-
-                        if unlock_flap_task is not None:
-                            unlock_flap_task.cancel()
-
-                        unlock_flap_task = loop.create_task(wait_for_lockout(hub))
+                        state.prey_detected()
                     else:
                         log.warning(
                             f"Prey detected with low probability ({max_prey_prob:.2%}), not locking the flap"
                         )
+                        state.no_prey()
                 else:
-                    if unlock_flap_task is not None:
-                        unlock_flap_task.cancel()
-
-                    await hub.send(UnlockFlapMessage())
+                    log.info("No prey detected, not locking the flap")
+                    state.no_prey()
 
 
 if __name__ == "__main__":

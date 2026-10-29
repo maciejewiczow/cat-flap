@@ -1,4 +1,4 @@
-name: Build and publish servo service image
+name: Build and publish misc hardware service image
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     paths:
       - "*"
       - "shared/**"
-      - "servo-service/**"
+      - "misc-hardware-service/**"
   workflow_dispatch:
 
 jobs:
@@ -21,9 +21,9 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
-      - name: Build servo service
+      - name: Build misc hardware service
         uses: ./.github/actions/build-service
         with:
-          service-name: servo
+          service-name: misc-hardware
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

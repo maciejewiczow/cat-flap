@@ -3,6 +3,8 @@ from datetime import datetime
 from PIL.Image import Image
 import numpy as np
 
+from shared.state import CatFlapStateMachine
+
 
 @dataclass
 class Message:
@@ -10,27 +12,12 @@ class Message:
 
 
 @dataclass
-class LockFlapMessage(Message):
+class EngageLockMessage(Message):
     pass
 
 
 @dataclass
-class UnlockFlapMessage(Message):
-    pass
-
-
-@dataclass
-class FlapLockedMessage(Message):
-    pass
-
-
-@dataclass
-class FlapUnlockedMessage(Message):
-    pass
-
-
-@dataclass
-class FlapInTransitionMessage(Message):
+class DisengageLockMessage(Message):
     pass
 
 
@@ -69,3 +56,18 @@ class InferenceCompleteMessage(Message):
     detected_classes: list[tuple[str, float]]
     image_with_overlays: np.ndarray = field(repr=False)
     result_json: str
+
+
+@dataclass
+class MainButtonPressedMessage(Message):
+    pass
+
+
+@dataclass
+class StateUpdate(Message):
+    new_state: CatFlapStateMachine
+
+
+@dataclass
+class ServiceActivated(Message):
+    pass
