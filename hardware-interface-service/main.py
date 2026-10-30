@@ -43,7 +43,9 @@ door_open_detector = Button(
 
 buzzer = Buzzer(int(environ["BUZZER_PIN"]), pin_factory=pin_factory)
 
-mode_switch_button = Button(int(environ["MODE_BUTTON_PIN"]), pin_factory=pin_factory)
+mode_switch_button = Button(
+    int(environ["MODE_BUTTON_PIN"]), pin_factory=pin_factory, bounce_time=0.05
+)
 
 
 async def sound_buzzer_short():
