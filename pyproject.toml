@@ -38,3 +38,6 @@ dev-dependencies = [
   "shared"
 ]
 package = false
+
+[tool.ruff.lint]
+ignore = ["EXE002"]

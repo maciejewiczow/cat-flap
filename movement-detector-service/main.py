@@ -1,12 +1,14 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from os import environ
+
+from gpiozero import Button
+from gpiozero.pins.pigpio import PiGPIOFactory
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
-from gpiozero import Button
-from gpiozero.pins.pigpio import PiGPIOFactory
 from shared.messages import MotionDetectedMessage, MotionEndedMessage
+from shared.state import CatFlapStateMachine
 
 log = get_logger("movement-detector")
 
@@ -15,11 +17,11 @@ executor = ThreadPoolExecutor(max_workers=1)
 factory = PiGPIOFactory()
 
 button = Button(
-    pin=int(environ.get("MOTION_SENSOR_PIN", 25)), pin_factory=factory, pull_up=False
+    pin=int(environ.get("MOTION_SENSOR_PIN", "25")), pin_factory=factory, pull_up=False
 )
 
 
-async def handle_messages(hub: WorkerMessageHub):
+async def handle_messages(hub: WorkerMessageHub, _: CatFlapStateMachine):
     log.info("Starting the movement detector service")
     loop = asyncio.get_event_loop()
 
