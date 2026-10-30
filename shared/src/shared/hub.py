@@ -1,9 +1,12 @@
 import asyncio
-from logging import Logger
 import pickle
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from logging import Logger
+from typing import Any
+
 import zmq
 import zmq.asyncio
+
 from .messages import Message
 
 
@@ -52,7 +55,7 @@ class WorkerMessageHub(MessageHub):
     async def send(self, message: Message):
         await self.pub_socket.send(pickle.dumps(message))
 
-    async def receive(self, *, timeout=100) -> AsyncGenerator[Message, Any]:
+    async def receive(self, *, timeout: int = 100) -> AsyncGenerator[Message, Any]:
         while True:
             try:
                 events = await self.poller.poll(timeout=timeout)

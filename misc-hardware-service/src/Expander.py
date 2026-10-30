@@ -1,4 +1,5 @@
-from typing import Callable
+from collections.abc import Callable
+
 from smbus3 import SMBus
 
 IODIRA_REGISTER = 0x0
@@ -14,13 +15,13 @@ class Pin:
         self.nr = nr
 
     def on(self):
-        self.expander._pin_on(self)
+        self.expander._pin_on(self)  # pyright: ignore[reportPrivateUsage]
 
     def off(self):
-        self.expander._pin_off(self)
+        self.expander._pin_off(self)  # pyright: ignore[reportPrivateUsage]
 
     def toggle(self):
-        self.expander._pin_toggle(self)
+        self.expander._pin_toggle(self)  # pyright: ignore[reportPrivateUsage]
 
 
 class Expander:

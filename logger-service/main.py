@@ -2,11 +2,12 @@ from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
 from shared.messages import ImageCapturedMessage, InferenceCompleteMessage, Message
+from shared.state import CatFlapStateMachine
 
 log = get_logger("event-logger")
 
 
-async def handle_messages(hub: WorkerMessageHub):
+async def handle_messages(hub: WorkerMessageHub, state: CatFlapStateMachine):
     log.info("Starting the logger service")
 
     async for message in hub.receive():

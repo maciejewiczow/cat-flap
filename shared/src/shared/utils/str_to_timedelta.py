@@ -1,6 +1,6 @@
-from math import floor
 import re
 from datetime import timedelta
+from math import floor
 
 regex = re.compile(
     r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?((?P<miliseconds>\d+?)ms)?"
@@ -15,7 +15,7 @@ def str_to_timedelta(delta_str: str) -> timedelta:
 
     parts = parts.groupdict()
 
-    time_params = {}
+    time_params: dict[str, int] = {}
 
     for name, param in parts.items():
         if param:
@@ -42,8 +42,8 @@ def timedelta_to_str(delta: timedelta) -> str:
     if seconds > 0:
         result += f"{seconds}s"
 
-    miliseconds = delta.microseconds // 1000
-    if miliseconds > 0:
-        result += f"{miliseconds}ms"
+    milliseconds = delta.microseconds // 1000
+    if milliseconds > 0:
+        result += f"{milliseconds}ms"
 
     return result

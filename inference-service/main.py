@@ -1,13 +1,15 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+
+from PIL.Image import Image
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
+from shared.main_fn import worker_main
+from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
+from shared.state import CatFlapStateMachine
 from shared.utils.str_to_timedelta import timedelta_to_str
 from ultralytics import YOLO  # pyright: ignore[reportPrivateImportUsage, reportMissingImports]
-from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
-from shared.main_fn import worker_main
-from PIL.Image import Image
 
 log = get_logger("inference")
 
@@ -16,7 +18,7 @@ model: YOLO | None = None
 
 def init_worker():
     global model
-    global log
+
     try:
         log.info("Initializing the model")
         model = YOLO("weights_ncnn_model", task="detect")
@@ -27,9 +29,6 @@ def init_worker():
 
 
 def worker_predict(image: Image | None):
-    global model
-    global log
-
     if model is None:
         log.error("Tried to use model which was not initialized")
         raise RuntimeError("Model not initialized for prediction")
@@ -38,7 +37,7 @@ def worker_predict(image: Image | None):
         if image is None:
             log.info("Warming up the worker")
             start = datetime.now()
-            res = model.predict("inference-service/dummy.jpg", verbose=False)
+            res = model.predict("inference-service/dummy.jpg", verbose=False)  # pyright: ignore[reportUnknownMemberType]
             log.info(
                 f"Warmup completed, took {timedelta_to_str(datetime.now() - start)}"
             )
@@ -46,7 +45,7 @@ def worker_predict(image: Image | None):
 
         log.info("Running the inference")
         start = datetime.now()
-        result = model.predict(image)
+        result = model.predict(image)  # pyright: ignore[reportUnknownMemberType]
         log.info(f"Inference took {timedelta_to_str(datetime.now() - start)}")
 
         return result
@@ -70,7 +69,7 @@ class ModelProcessor:
         return await loop.run_in_executor(self.executor, worker_predict, image)
 
 
-async def handle_messages(hub: WorkerMessageHub):
+async def handle_messages(hub: WorkerMessageHub, _: CatFlapStateMachine):
     log.info("Starting the inference service")
     processor = ModelProcessor()
     log.info("Model processor initialized")
@@ -96,6 +95,8 @@ async def handle_messages(hub: WorkerMessageHub):
                         result_json=results[0].to_json(),
                     )
                 )
+            case _:
+                pass
 
 
 if __name__ == "__main__":

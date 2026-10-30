@@ -1,21 +1,23 @@
 import asyncio
 from os import environ
+
+import picamera2  # pyright: ignore[reportMissingImports]
+from PIL import Image
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
 from shared.messages import ImageCapturedMessage, StartCaptureMessage
-import picamera2  # pyright: ignore[reportMissingImports]
-from PIL import Image
+from shared.state import CatFlapStateMachine
 
 log = get_logger("image-capturer-service")
 
 camera_res = (
-    int(environ.get("CAMERA_RESOLUTION_HEIGHT", 1920)),
-    int(environ.get("CAMERA_RESOLUTION_HEIGHT", 1080)),
+    int(environ.get("CAMERA_RESOLUTION_WIDTH", "1920")),
+    int(environ.get("CAMERA_RESOLUTION_HEIGHT", "1080")),
 )
 
 
-async def handle_messages(hub: WorkerMessageHub):
+async def handle_messages(hub: WorkerMessageHub, _: CatFlapStateMachine):
     log.info("Starting the image capture service")
 
     camera = picamera2.Picamera2()

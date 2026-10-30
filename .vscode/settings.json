@@ -3,7 +3,12 @@
         "./shared/src"
     ],
     "cSpell.words": [
+        "fromarray",
+        "gpiozero",
+        "Picamera",
+        "pigpio",
         "signum",
+        "smbus",
         "statemachine"
     ],
     "python.testing.pytestArgs": [
@@ -11,5 +16,10 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.analysis.inlayHints.pytestParameters": true
+    "python.analysis.inlayHints.pytestParameters": true,
+    "python-envs.defaultEnvManager": "ms-python.python:venv",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportUnknownParameterType": "none",
+        "reportUnknownMemberType": "none",
+    }
 }

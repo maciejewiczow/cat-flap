@@ -1,12 +1,14 @@
 import asyncio
-from logging import Logger
-from os import environ
 import signal
 import time
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from logging import Logger
+from os import environ
+from typing import Any
 
 from shared.messages import ServiceActivated, StateUpdate
 from shared.state import CatFlapStateMachine
+
 from .hub import WorkerMessageHub
 
 
@@ -15,7 +17,7 @@ def get_hub(log: Logger):
 
 
 def setup_signal_handlers(log: Logger):
-    def signal_handler(signum, frame):
+    def signal_handler(signum: Any, frame: Any):
         log.info(f"Signal {signum} received, shutting down...")
         asyncio.get_event_loop().stop()
 
@@ -56,12 +58,13 @@ def worker_main(
             log.info("Waiting for response")
             async for message in hub.receive():
                 match message:
-                    case StateUpdate(new_state=s):
+                    case StateUpdate(new_state=state):
                         log.info("Got state from the persistence svc")
-                        state = s
                         break
+                    case _:
+                        pass
 
-            await message_handler(hub, state)
+            await message_handler(hub, state)  # pyright: ignore[reportPossiblyUnboundVariable]
 
         asyncio.run(main(hub))
     except KeyError:

@@ -1,12 +1,22 @@
+import asyncio
 from os import environ
-from smbus3 import SMBus
+
+from gpiozero import Button, Buzzer, DigitalOutputDevice  # pyright: ignore[reportMissingTypeStubs]
+from gpiozero.pins.pigpio import PiGPIOFactory  # pyright: ignore[reportMissingTypeStubs]
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
-from shared.messages import ImageCapturedMessage, InferenceCompleteMessage
 from shared.main_fn import worker_main
+from shared.messages import (
+    DisengageLockMessage,
+    DoorClosedMessage,
+    DoorOpenedMessage,
+    EngageLockMessage,
+    MainButtonPressedMessage,
+    StateUpdate,
+)
+from shared.state import CatFlapStateMachine
+from smbus3 import SMBus
 from src.Expander import Expander
-from gpiozero import Button, Buzzer, DigitalOutputDevice
-from gpiozero.pins.pigpio import PiGPIOFactory
 
 pin_factory = PiGPIOFactory(
     host=environ.get("PIGPIO_ADDR", "localhost"),
@@ -15,12 +25,12 @@ pin_factory = PiGPIOFactory(
 
 log = get_logger("hardware")
 
-bus = SMBus(int(environ.get("I2C_BUS_NUMBER", 1)))
+bus = SMBus(int(environ.get("I2C_BUS_NUMBER", "1")))
 
-expander = Expander(bus, address=int(environ.get("I2C_EXPANDER_ADDRESS", 0x20)))
+expander = Expander(bus, address=int(environ.get("I2C_EXPANDER_ADDRESS", "0x20"), 16))
 
-acitve_diode = expander.pin(int(environ["ACTIVE_DIODE_PIN"]))
-motion_detected_diode = expander.pin(int(environ["MOTION_DETECTED_DIODE_PIN"]))
+active_diode = expander.pin(int(environ["ACTIVE_DIODE_PIN"]))
+movement_detected_diode = expander.pin(int(environ["MOTION_DETECTED_DIODE_PIN"]))
 locked_diode = expander.pin(int(environ["LOCKED_DIODE_PIN"]))
 door_open_diode = expander.pin(int(environ["DOOR_OPEN_DIODE_PIN"]))
 
@@ -37,14 +47,87 @@ lock_electromagnet = DigitalOutputDevice(
 mode_switch_button = Button(int(environ["MODE_BUTTON_PIN"]), pin_factory=pin_factory)
 
 
-async def handle_messages(hub: WorkerMessageHub):
+async def sound_buzzer_short():
+    buzzer.on()
+    await asyncio.sleep(0.2)
+    buzzer.off()
+
+
+async def sound_buzzer_alarm():
+    buzzer.on()
+    await asyncio.sleep(0.5)
+    buzzer.off()
+    await asyncio.sleep(0.5)
+
+    buzzer.on()
+    await asyncio.sleep(0.5)
+    buzzer.off()
+    await asyncio.sleep(0.5)
+
+    buzzer.on()
+    await asyncio.sleep(1)
+    buzzer.off()
+
+
+def update_diodes(state: CatFlapStateMachine):
+    if state.is_locked:
+        locked_diode.on()
+    else:
+        locked_diode.off()
+
+    if state.is_door_open:
+        door_open_diode.on()
+    else:
+        door_open_diode.off()
+
+    if state.is_movement_detected:
+        movement_detected_diode.on()
+    else:
+        movement_detected_diode.off()
+
+    if state.is_disabled:
+        active_diode.off()
+    else:
+        active_diode.on()
+
+
+async def handle_messages(hub: WorkerMessageHub, initial_state: CatFlapStateMachine):
     log.info("Starting the hardware service")
+
+    door_open_detector.when_pressed = lambda: asyncio.create_task(
+        hub.send(DoorOpenedMessage())
+    )
+    door_open_detector.when_released = lambda: asyncio.create_task(
+        hub.send(DoorClosedMessage())
+    )
+
+    mode_switch_button.when_pressed = lambda: asyncio.create_task(
+        hub.send(MainButtonPressedMessage())
+    )
+
+    update_diodes(initial_state)
+
+    if initial_state.is_locked:
+        lock_electromagnet.on()
 
     async for message in hub.receive():
         match message:
-            case ImageCapturedMessage():
-                pass
-            case InferenceCompleteMessage():
+            case StateUpdate(new_state=state):
+                update_diodes(state)
+
+            case EngageLockMessage():
+                log.info("Engaging lock")
+                lock_electromagnet.on()
+                asyncio.create_task(sound_buzzer_alarm())
+
+            case DisengageLockMessage():
+                log.info("Disengaging lock")
+                lock_electromagnet.off()
+
+            case MainButtonPressedMessage():
+                asyncio.create_task(sound_buzzer_short())
+
+            case _:
                 pass
 
 
