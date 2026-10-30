@@ -9,7 +9,9 @@ RUN apt-get update \
     && dpkg --add-architecture armhf \
     && echo "deb [signed-by=/usr/share/keyrings/raspberrypi.gpg] https://archive.raspberrypi.org/debian/ $(sh -c '. /etc/os-release; echo $VERSION_CODENAME') main" \
     > /etc/apt/sources.list.d/raspi.list \
-    && apt-get -o Apt::Key::gpgvcommand=/usr/bin/gpgv update \
+    && echo 'Apt::Key::gpgvcommand "/usr/bin/gpgv";' \
+    > /etc/apt/apt.conf.d/99raspberrypi-gpgv \
+    && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     libdtovl0 \
