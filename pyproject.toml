@@ -13,7 +13,6 @@ inference-service = { workspace = true }
 logger-service = { workspace = true }
 logic-service = { workspace = true }
 misc-hardware-service = { workspace = true }
-movement-detector-service = { workspace = true }
 persistence-service = { workspace = true }
 shared = { workspace = true }
 
@@ -33,8 +32,10 @@ dev-dependencies = [
   "logger-service",
   "logic-service",
   "misc-hardware-service",
-  "movement-detector-service",
   "persistence-service",
   "shared"
 ]
 package = false
+
+[tool.ruff.lint]
+ignore = ["EXE002"]
