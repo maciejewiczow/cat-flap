@@ -48,50 +48,60 @@ mode_switch_button = Button(int(environ["MODE_BUTTON_PIN"]), pin_factory=pin_fac
 
 async def sound_buzzer_short():
     buzzer.on()
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(0.1)
     buzzer.off()
 
 
 async def sound_buzzer_alarm():
     buzzer.on()
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.2)
     buzzer.off()
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.2)
+
+    buzzer.on()
+    await asyncio.sleep(0.2)
+    buzzer.off()
+    await asyncio.sleep(0.2)
 
     buzzer.on()
     await asyncio.sleep(0.5)
-    buzzer.off()
-    await asyncio.sleep(0.5)
-
-    buzzer.on()
-    await asyncio.sleep(1)
     buzzer.off()
 
 
 def update_diodes(state: CatFlapStateMachine):
     if state.is_locked:
+        log.debug("Lock engaged, turning on the lock diode")
         locked_diode.on()
     else:
+        log.debug("Lock disengaged, turning off the lock diode")
         locked_diode.off()
 
     if state.is_door_open:
+        log.debug("Door is open, turning on the door open diode")
         door_open_diode.on()
     else:
+        log.debug("Door is closed, turning off the door open diode")
         door_open_diode.off()
 
     if state.is_movement_detected:
+        log.debug("Movement detected, turning on the movement diode")
         movement_detected_diode.on()
     else:
+        log.debug("Movement ended, turning off the movement diode")
         movement_detected_diode.off()
 
     if state.is_disabled:
+        log.debug("Turning off the active diode")
         active_diode.off()
     else:
+        log.debug("Turning on the active diode")
         active_diode.on()
 
     if state.is_inferring:
+        log.debug("Turning on the inference diode")
         inference_diode.on()
     else:
+        log.debug("Turning off the inference diode")
         inference_diode.off()
 
 
@@ -112,6 +122,7 @@ async def handle_messages(hub: WorkerMessageHub, initial_state: CatFlapStateMach
     async for message in hub.receive():
         match message:
             case StateUpdate(new_state=state):
+                log.info(f"Received state update: {state}, updating diodes")
                 update_diodes(state)
 
             case EngageLockMessage():
