@@ -4,11 +4,17 @@ Cat Flap is a Raspberry Pi application that coordinates a motorized cat flap, ca
 
 ## Architecture
 
-The system architecture aims to be as modular as possible, with some core services (logic, image capture, movement detection, persistence) and some additional services which can be added or removed from the compose stack to adjust the service capabilities to the user needs and hardware setup.
+The system architecture is split into focused services for logic, image capture, movement detection, hardware input and indication, lock actuation, and persistence. Services can be included in a deployment to match the available hardware and desired capabilities.
 
 ### Core state-machine diagram
 
 ![Cat flap state machine](docs/resources/state-machine.png)
+
+### Raspberry Pi pinout
+
+The wiring reference below labels the Raspberry Pi GPIO and header pins used by the current hardware setup. Service pin assignments are configurable through the environment variables listed later in this document.
+
+![Raspberry Pi pinout for Cat Flap hardware](docs/resources/cat-flap-pinout.jpg)
 
 ## Message system
 
@@ -27,17 +33,17 @@ Message definitions live in `shared/src/shared/messages.py`; transport is implem
 | Message | Payload | Meaning and handlers |
 | --- | --- | --- |
 | `ServiceActivated` | Timestamp only | A worker announces startup. The persistence service responds with the saved state, or an initial state if no valid snapshot exists. |
-| `StateUpdate` | `new_state: CatFlapStateMachine` | Logic broadcasts the current state after transitions. Hardware updates its indicator LEDs; persistence writes a snapshot. It also carries the startup state from persistence to workers waiting for initialization. |
+| `StateUpdate` | `new_state: CatFlapStateMachine` | Logic broadcasts the current state after transitions. `hardware-interface-service` updates its indicator LEDs, `persistence-service` writes a snapshot, and workers receive the startup state from persistence before initialization. |
 | `MotionDetectedMessage` | Timestamp only | Movement detector publishes this when its sensor becomes active. Logic starts a capture cycle from idle, or resumes a locked capture cycle. Motion while the door is open is ignored. |
 | `MotionEndedMessage` | Timestamp only | Movement detector publishes this when its sensor becomes inactive. Logic ends the movement/capture cycle when the state reports movement active. |
-| `DoorOpenedMessage` | Timestamp only | Hardware sends this when the door sensor is pressed; logic updates the state. |
-| `DoorClosedMessage` | Timestamp only | Hardware sends this when the door sensor is released; logic updates the state. |
-| `MainButtonPressedMessage` | Timestamp only | Hardware sends this on a mode-button press. Logic enables a disabled system or disables an enabled system; hardware also sounds a short confirmation beep. |
+| `DoorOpenedMessage` | Timestamp only | `hardware-interface-service` sends this when the door sensor is pressed; logic updates the state. |
+| `DoorClosedMessage` | Timestamp only | `hardware-interface-service` sends this when the door sensor is released; logic updates the state. |
+| `MainButtonPressedMessage` | Timestamp only | `hardware-interface-service` sends this on a mode-button press. Logic enables a disabled system or disables an enabled system; the hardware interface also sounds a short confirmation beep. |
 | `StartCaptureMessage` | Timestamp only | Logic requests a camera capture. The image-capturer handles it. |
 | `ImageCapturedMessage` | `image: PIL.Image.Image` | Image-capturer publishes the captured image. Inference processes it; image-saver saves the raw image; logger records receipt. |
 | `InferenceCompleteMessage` | `detected_classes: list[tuple[str, float]]`, `image_with_overlays: numpy.ndarray`, `result_json: str` | Inference publishes detection labels/probabilities, a rendered image, and the model result JSON. Logic decides whether to lock; image-saver writes the rendered image and JSON; logger records receipt. |
-| `EngageLockMessage` | Timestamp only | Logic requests lock engagement when entering a locked state. Hardware energizes the lock and sounds an alarm pattern. |
-| `DisengageLockMessage` | Timestamp only | Logic requests lock release when leaving a locked state. Hardware de-energizes the lock. |
+| `EngageLockMessage` | Timestamp only | Logic requests lock engagement when entering a locked state. `lock-service` energizes the lock; `hardware-interface-service` sounds an alarm pattern. |
+| `DisengageLockMessage` | Timestamp only | Logic requests lock release when leaving a locked state. `lock-service` de-energizes the lock. |
 
 All message types inherit the timestamp field from `Message`. Large image fields are sent inline through the same pickle transport, rather than via a separate blob store.
 
@@ -49,7 +55,7 @@ All message types inherit the timestamp field from `Message`. Large image fields
 2. A normal worker connects, publishes `ServiceActivated`, and waits for a `StateUpdate` before starting its message handler. The persistence worker uses a separate startup path and waits briefly before connecting.
 3. On `ServiceActivated`, persistence reads `/data/state.json`. It publishes the restored state, or a new default `CatFlapStateMachine` if the file is absent or invalid.
 4. Logic configures the capture and lock timers, registers state listeners, and restarts timers for states that need them. If startup restores an active movement or inference state, logic resumes the capture process.
-5. On each later state transition, logic publishes `StateUpdate`. Persistence writes the current state ID (or active state IDs) to `/data/state.json`; hardware refreshes its indicators.
+5. On each later state transition, logic publishes `StateUpdate`. Persistence writes the current state ID (or active state IDs) to `/data/state.json`; the hardware interface refreshes its indicators. On startup, `lock-service` energizes the electromagnet if the restored state is locked.
 
 The saved snapshot contains state identifiers rather than the whole machine. State transitions and timer behavior are defined in `shared/src/shared/state.py`.
 
@@ -65,12 +71,12 @@ The saved snapshot contains state identifiers rather than the whole machine. Sta
 
 ### Lock and timeout
 
-When a prey result qualifies, `MessageSenderListener` compares the new state with whether it believes the lock is engaged and publishes the corresponding lock command. Hardware actuates the electromagnet. `LOCKOUT_DURATION` (default `20s`) controls the locked-state timeout; after timeout the state machine can return to idle, or to the door-open state if the door remains open. A movement event while locked starts periodic captures during the lockout.
+When a prey result qualifies, `MessageSenderListener` compares the new state with whether it believes the lock is engaged and publishes the corresponding lock command. `lock-service` actuates the electromagnet; `hardware-interface-service` sounds the alarm when it receives the engage command. `LOCKOUT_DURATION` (default `20s`) controls the locked-state timeout; after timeout the state machine can return to idle, or to the door-open state if the door remains open. A movement event while locked starts periodic captures during the lockout.
 
 ### Door and mode button
 
-- Door sensor press/release publishes `DoorOpenedMessage` / `DoorClosedMessage`. Logic tracks the door alongside movement, inference, and lock states. Motion events received while the door is open are ignored.
-- Pressing the mode button publishes `MainButtonPressedMessage`. Logic toggles between disabled and enabled (idle). Hardware sounds a short beep on each button event, and state updates drive the active indicator.
+- Door sensor press/release on `hardware-interface-service` publishes `DoorOpenedMessage` / `DoorClosedMessage`. Logic tracks the door alongside movement, inference, and lock states. Motion events received while the door is open are ignored.
+- Pressing the mode button publishes `MainButtonPressedMessage`. Logic toggles between disabled and enabled (idle). The hardware interface sounds a short beep on each button event, and state updates drive the active indicator.
 - Disabling transitions the state machine to `disabled` from any defined operating state. It does not itself publish a lock-release command unless the machine's locked-state value changes in a way that triggers the listener.
 
 ### Image saving
@@ -90,7 +96,8 @@ When a prey result qualifies, `MessageSenderListener` compares the new state wit
 | `hub-service` | Runs the ZeroMQ message proxy. |
 | `logic-service` | Owns the state machine, interprets events and inference results, schedules repeated captures, and requests lock actions. |
 | `movement-detector-service` | Reads the movement sensor and publishes movement-started and movement-ended events. |
-| `misc-hardware-service` | Reads the door and mode-button inputs; controls lock, buzzer, and indicator LEDs. |
+| `hardware-interface-service` | Reads the door and mode-button inputs; controls the buzzer and indicator LEDs. |
+| `lock-service` | Controls the lock electromagnet and restores its output from the initial state. |
 | `image-capturer-service` | Captures still images using Picamera2. |
 | `inference-service` | Warms up and runs the YOLO model; publishes detections and rendered results. |
 | `image-saver-service` | Persists raw images, rendered images, and model-result JSON. |
@@ -133,7 +140,7 @@ No service-specific variables. Requires the shared `SOCKETS_DIR` setting.
 | `PIGPIO_ADDR` | `localhost` | Pigpio daemon host; the service Dockerfile sets this default. |
 | `PIGPIO_PORT` | `8888` | Pigpio daemon port; the service Dockerfile sets this default. |
 
-#### `misc-hardware-service`
+#### `hardware-interface-service`
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -141,14 +148,22 @@ No service-specific variables. Requires the shared `SOCKETS_DIR` setting.
 | `PIGPIO_PORT` | `8888` | Pigpio daemon port. |
 | `I2C_BUS_NUMBER` | `1` | I2C bus used by the GPIO expander. |
 | `I2C_EXPANDER_ADDRESS` | `0x20` | GPIO expander address, parsed as hexadecimal. |
-| `ACTIVE_DIODE_PIN` | Required | GPIO expander pin for the active indicator. |
-| `MOTION_DETECTED_DIODE_PIN` | Required | GPIO expander pin for the movement indicator. |
-| `LOCKED_DIODE_PIN` | Required | GPIO expander pin for the locked indicator. |
-| `DOOR_OPEN_DIODE_PIN` | Required | GPIO expander pin for the open-door indicator. |
+| `ACTIVE_DIODE_EXPANDER_PIN` | Required | GPIO expander pin for the active indicator. |
+| `MOTION_DETECTED_DIODE_EXPANDER_PIN` | Required | GPIO expander pin for the movement indicator. |
+| `LOCKED_DIODE_EXPANDER_PIN` | Required | GPIO expander pin for the locked indicator. |
+| `DOOR_OPEN_DIODE_EXPANDER_PIN` | Required | GPIO expander pin for the open-door indicator. |
+| `INFERENCE_DIODE_EXPANDER_PIN` | Required | GPIO expander pin for the inference indicator. |
 | `DOOR_SENSOR_PIN` | Required | Raspberry Pi GPIO pin for the door sensor. |
 | `BUZZER_PIN` | Required | Raspberry Pi GPIO pin for the buzzer. |
-| `LOCK_PIN` | Required | Raspberry Pi GPIO pin controlling the lock electromagnet. |
 | `MODE_BUTTON_PIN` | Required | Raspberry Pi GPIO pin for the mode button. |
+
+#### `lock-service`
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PIGPIO_ADDR` | `localhost` | Pigpio daemon host. |
+| `PIGPIO_PORT` | `8888` | Pigpio daemon port. |
+| `LOCK_PIN` | Required | Raspberry Pi GPIO pin controlling the lock electromagnet. |
 
 #### `image-capturer-service`
 
@@ -175,7 +190,7 @@ No service-specific environment variables beyond the shared logging settings.
 
 Persistent/runtime files are `/data/state.json`, `/data/captured`, `/data/labeled`, and `/data/results`. Mount persistent storage at `/data` for the persistence and image-saver containers.
 
-## Docker Compose deployment
+## Docker deployment
 
 The stack is intended to run as one container per service on the Raspberry Pi. The sample Compose file belongs in this section; ensure every service, including `hub-service`, mounts the same named volume at the same `SOCKETS_DIR` path.
 

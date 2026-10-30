@@ -1,4 +1,4 @@
-name: Build and publish misc hardware service image
+name: Build and publish hardware interface service image
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     paths:
       - "*"
       - "shared/**"
-      - "misc-hardware-service/**"
+      - "hardware-interface-service/**"
   workflow_dispatch:
 
 jobs:
@@ -21,9 +21,9 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
-      - name: Build misc hardware service
+      - name: Build hardware interface service
         uses: ./.github/actions/build-service
         with:
-          service-name: misc-hardware
+          service-name: hardware-interface
           dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}

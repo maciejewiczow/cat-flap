@@ -1,7 +1,7 @@
 [project]
 name = "cat-flap"
 version = "0.1.0"
-description = "Cat flap project"
+description = "Autonomous cat flap with AI-based prey detection"
 requires-python = ">=3.10"
 dependencies = []
 
@@ -12,16 +12,14 @@ image-saver-service = { workspace = true }
 inference-service = { workspace = true }
 logger-service = { workspace = true }
 logic-service = { workspace = true }
-misc-hardware-service = { workspace = true }
+hardware-interface-service = { workspace = true }
+lock-service = { workspace = true }
 movement-detector-service = { workspace = true }
 persistence-service = { workspace = true }
 shared = { workspace = true }
 
 [tool.uv.workspace]
-members = [
-  "./*-service",
-  "./shared",
-]
+members = ["./*-service", "./shared"]
 exclude = ["train"]
 
 [tool.uv]
@@ -32,10 +30,11 @@ dev-dependencies = [
   "inference-service",
   "logger-service",
   "logic-service",
-  "misc-hardware-service",
+  "hardware-interface-service",
   "movement-detector-service",
   "persistence-service",
-  "shared"
+  "lock-service",
+  "shared",
 ]
 package = false
 

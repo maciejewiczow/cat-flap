@@ -1,13 +1,12 @@
 import asyncio
 from os import environ
 
-from gpiozero import Button, Buzzer, DigitalOutputDevice  # pyright: ignore[reportMissingTypeStubs]
+from gpiozero import Button, Buzzer  # pyright: ignore[reportMissingTypeStubs]
 from gpiozero.pins.pigpio import PiGPIOFactory  # pyright: ignore[reportMissingTypeStubs]
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
 from shared.messages import (
-    DisengageLockMessage,
     DoorClosedMessage,
     DoorOpenedMessage,
     EngageLockMessage,
@@ -23,26 +22,25 @@ pin_factory = PiGPIOFactory(
     port=environ.get("PIGPIO_PORT", "8888"),
 )
 
-log = get_logger("hardware")
+log = get_logger("hardware-interface")
 
 bus = SMBus(int(environ.get("I2C_BUS_NUMBER", "1")))
 
 expander = Expander(bus, address=int(environ.get("I2C_EXPANDER_ADDRESS", "0x20"), 16))
 
-active_diode = expander.pin(int(environ["ACTIVE_DIODE_PIN"]))
-movement_detected_diode = expander.pin(int(environ["MOTION_DETECTED_DIODE_PIN"]))
-locked_diode = expander.pin(int(environ["LOCKED_DIODE_PIN"]))
-door_open_diode = expander.pin(int(environ["DOOR_OPEN_DIODE_PIN"]))
+active_diode = expander.pin(int(environ["ACTIVE_DIODE_EXPANDER_PIN"]))
+movement_detected_diode = expander.pin(
+    int(environ["MOTION_DETECTED_DIODE_EXPANDER_PIN"])
+)
+locked_diode = expander.pin(int(environ["LOCKED_DIODE_EXPANDER_PIN"]))
+door_open_diode = expander.pin(int(environ["DOOR_OPEN_DIODE_EXPANDER_PIN"]))
+inference_diode = expander.pin(int(environ["INFERENCE_DIODE_EXPANDER_PIN"]))
 
 door_open_detector = Button(
     int(environ["DOOR_SENSOR_PIN"]), pull_up=False, pin_factory=pin_factory
 )
 
 buzzer = Buzzer(int(environ["BUZZER_PIN"]), pin_factory=pin_factory)
-
-lock_electromagnet = DigitalOutputDevice(
-    int(environ["LOCK_PIN"]), pin_factory=pin_factory
-)
 
 mode_switch_button = Button(int(environ["MODE_BUTTON_PIN"]), pin_factory=pin_factory)
 
@@ -90,6 +88,11 @@ def update_diodes(state: CatFlapStateMachine):
     else:
         active_diode.on()
 
+    if state.is_inferring:
+        inference_diode.on()
+    else:
+        inference_diode.off()
+
 
 async def handle_messages(hub: WorkerMessageHub, initial_state: CatFlapStateMachine):
     log.info("Starting the hardware service")
@@ -107,22 +110,14 @@ async def handle_messages(hub: WorkerMessageHub, initial_state: CatFlapStateMach
 
     update_diodes(initial_state)
 
-    if initial_state.is_locked:
-        lock_electromagnet.on()
-
     async for message in hub.receive():
         match message:
             case StateUpdate(new_state=state):
                 update_diodes(state)
 
             case EngageLockMessage():
-                log.info("Engaging lock")
-                lock_electromagnet.on()
+                log.info("Lock engaged, sounding alarm")
                 asyncio.create_task(sound_buzzer_alarm())
-
-            case DisengageLockMessage():
-                log.info("Disengaging lock")
-                lock_electromagnet.off()
 
             case MainButtonPressedMessage():
                 asyncio.create_task(sound_buzzer_short())

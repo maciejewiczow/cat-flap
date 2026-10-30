@@ -154,6 +154,10 @@ class CatFlapStateMachine(StateChart[object]):
             or self.locked_and_movement_and_door_open.is_active
         )
 
+    @property
+    def is_inferring(self):
+        return self.inferring_and_door_open.is_active or self.inference.is_active
+
 
 @dataclass
 class StateRef:

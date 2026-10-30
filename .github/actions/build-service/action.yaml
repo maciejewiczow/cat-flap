@@ -4,7 +4,7 @@ description: Build and publish a service image to dockerhub
 inputs:
   service-name:
     required: true
-    description: The path of the service to be built
+    description: Name of the service to build. Must match the name of the service directory, without the "-service" suffix
   dockerhub-username:
     required: true
     description: Username that will be used to login into dockerhub
