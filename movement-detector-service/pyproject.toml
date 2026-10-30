@@ -1,0 +1,10 @@
+[project]
+name = "movement-detector-service"
+version = "0.1.0"
+description = "Movement detector interface service for the cat flap"
+requires-python = ">=3.13"
+dependencies = [
+    "shared",
+    "gpiozero",
+    "pigpio"
+]
