@@ -1,0 +1,29 @@
+name: Build and publish persistence service image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "*"
+      - "shared/**"
+      - "persistence-service/**"
+  workflow_dispatch:
+
+jobs:
+  push_to_registry:
+    name: Build
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+      - name: Build persistence service
+        uses: ./.github/actions/build-service
+        with:
+          service-name: persistence
+          dockerhub-username: ${{ secrets.DOCKER_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKER_PASSWORD }}
