@@ -16,13 +16,13 @@ runs:
   using: composite
   steps:
     - name: Log in to Docker Hub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v4
       with:
         username: ${{ inputs.dockerhub-username }}
         password: ${{ inputs.dockerhub-password }}
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Check for service-specific dockerfile
       shell: bash
@@ -32,14 +32,14 @@ runs:
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta-final-image
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v6
       with:
         images: mafciejewiczow/cat-flap-${{ inputs.service-name }}-svc
 
     - name: Build the Docker image
       if: ${{ steps.has-dockerfile.outcome == 'failure' }}
       id: build-and-push-only
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v7
       with:
         context: .
         build-args: |
@@ -54,14 +54,14 @@ runs:
     - name: Extract metadata (tags, labels) for Docker app base image
       if: ${{ steps.has-dockerfile.outcome == 'success' }}
       id: meta-with-descendant
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v6
       with:
         images: mafciejewiczow/cat-flap-${{ inputs.service-name }}-base-app
 
     - name: Build base Docker image
       if: ${{ steps.has-dockerfile.outcome == 'success' }}
       id: build-base-image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v7
       with:
         context: .
         build-args: |
@@ -76,7 +76,7 @@ runs:
     - name: Build service Docker image
       if: ${{ steps.has-dockerfile.outcome == 'success' }}
       id: build-and-push
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v7
       with:
         context: .
         file: ./${{ inputs.service-name }}-service/Dockerfile
