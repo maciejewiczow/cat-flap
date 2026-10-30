@@ -54,7 +54,9 @@ class StateUpdateListener:
         self, source: State, target: State, machine: CatFlapStateMachine
     ):
         log.info(f"State changed: {source} -> {target}")
-        _schedule_send(self.loop, self.hub, StateUpdate(new_state=machine))
+        state_snapshot = CatFlapStateMachine()
+        state_snapshot.current_state_value = machine.current_state_value
+        _schedule_send(self.loop, self.hub, StateUpdate(new_state=state_snapshot))
 
 
 class MessageSenderListener:
