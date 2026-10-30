@@ -1,7 +1,7 @@
 FROM python:3.13-trixie
 
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gpg wget \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gpg gpgv wget \
     && wget -O /tmp/raspberrypi.gpg.key https://archive.raspberrypi.org/debian/raspberrypi.gpg.key \
     && gpg --dearmor --output /usr/share/keyrings/raspberrypi.gpg /tmp/raspberrypi.gpg.key \
     && test "$(gpg --show-keys --with-colons /usr/share/keyrings/raspberrypi.gpg | awk -F: '$1 == "fpr" { print $10; exit }')" = "CF8A1AF502A2AA2D763BAE7E82B129927FA3303E" \
