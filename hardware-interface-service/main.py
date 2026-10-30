@@ -11,6 +11,7 @@ from shared.messages import (
     DoorOpenedMessage,
     EngageLockMessage,
     MainButtonPressedMessage,
+    Message,
     StateUpdate,
 )
 from shared.state import CatFlapStateMachine
@@ -96,17 +97,15 @@ def update_diodes(state: CatFlapStateMachine):
 
 async def handle_messages(hub: WorkerMessageHub, initial_state: CatFlapStateMachine):
     log.info("Starting the hardware service")
+    loop = asyncio.get_running_loop()
 
-    door_open_detector.when_pressed = lambda: asyncio.create_task(
-        hub.send(DoorOpenedMessage())
-    )
-    door_open_detector.when_released = lambda: asyncio.create_task(
-        hub.send(DoorClosedMessage())
-    )
+    def send_message(message: Message):
+        loop.call_soon_threadsafe(lambda: asyncio.create_task(hub.send(message)))
 
-    mode_switch_button.when_pressed = lambda: asyncio.create_task(
-        hub.send(MainButtonPressedMessage())
-    )
+    door_open_detector.when_pressed = lambda: send_message(DoorOpenedMessage())
+    door_open_detector.when_released = lambda: send_message(DoorClosedMessage())
+
+    mode_switch_button.when_pressed = lambda: send_message(MainButtonPressedMessage())
 
     update_diodes(initial_state)
 
