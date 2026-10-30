@@ -190,17 +190,159 @@ No service-specific environment variables beyond the shared logging settings.
 
 Persistent/runtime files are `/data/state.json`, `/data/captured`, `/data/labeled`, and `/data/results`. Mount persistent storage at `/data` for the persistence and image-saver containers.
 
-## Docker deployment
+## Docker compose deployment
 
 The stack is intended to run as one container per service on the Raspberry Pi. The sample Compose file belongs in this section; ensure every service, including `hub-service`, mounts the same named volume at the same `SOCKETS_DIR` path.
 
 ```yaml
-# Sample full-stack docker-compose.yml goes here.
-# Include hub-service, logic-service, movement-detector-service,
-# misc-hardware-service, image-capturer-service, inference-service,
-# image-saver-service, persistence-service, and logger-service.
-# Mount one shared named volume at /var/run/cat-flap/sockets in every service.
-# Mount persistent /data storage in persistence-service and image-saver-service.
+services:
+  motion-detector:
+    image: mafciejewiczow/cat-flap-movement-detector-svc:master
+    restart: unless-stopped
+    container_name: motion-detector
+    network_mode: host
+    environment:
+      - MOTION_SENSOR_PIN=25
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+    devices:
+      - /dev/mem:/dev/mem
+      - /dev/gpiomem:/dev/gpiomem
+    depends_on:
+      - hub
+      - persistence
+
+  logger:
+    image: mafciejewiczow/cat-flap-logger-svc:master
+    restart: unless-stopped
+    container_name: logger
+    depends_on:
+      - hub
+      - persistence
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+    environment:
+      - LOG_LEVEL=DEBUG
+
+  logic:
+    image: mafciejewiczow/cat-flap-logic-svc:master
+    restart: unless-stopped
+    container_name: logic
+    environment:
+      - CAPTURE_INTERVAL=5s
+    depends_on:
+      - hub
+      - persistence
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+
+  inference:
+    image: mafciejewiczow/cat-flap-inference-svc:master
+    restart: unless-stopped
+    container_name: inference
+    depends_on:
+      - hub
+      - persistence
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+
+  hub:
+    image: mafciejewiczow/cat-flap-hub-svc:master
+    restart: unless-stopped
+    container_name: hub
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+
+  image-saver:
+    image: mafciejewiczow/cat-flap-image-saver-svc:master
+    restart: unless-stopped
+    container_name: image-saver
+    depends_on:
+      - hub
+      - persistence
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+      - ./cat-flap/data:/data
+
+  image-capturer:
+    image: mafciejewiczow/cat-flap-image-capturer-svc:master
+    restart: unless-stopped
+    container_name: image-capturer
+    privileged: true
+    depends_on:
+      - hub
+      - persistence
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+      - /run/udev/:/run/udev:ro
+    devices:
+      - /dev/video0:/dev/video0
+
+  persistence:
+    image: mafciejewiczow/cat-flap-persistence-svc:master
+    restart: unless-stopped
+    container_name: persistence
+    depends_on:
+      - hub
+      - persistence
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+      - ./cat-flap/state:/data
+
+  hardware-interface:
+    image: mafciejewiczow/cat-flap-hardware-interface-svc:master
+    restart: unless-stopped
+    container_name: hardware-interface
+    network_mode: host
+    environment:
+      - I2C_EXPANDER_ADDRESS=0x20
+      - I2C_BUS_NUMBER=1
+      - ACTIVE_DIODE_EXPANDER_PIN=13
+      - MOTION_DETECTED_DIODE_EXPANDER_PIN=12
+      - LOCKED_DIODE_EXPANDER_PIN=11
+      - DOOR_OPEN_DIODE_EXPANDER_PIN=14
+      - INFERENCE_DIODE_EXPANDER_PIN=15
+      - DOOR_SENSOR_PIN=23
+      - BUZZER_PIN=24
+      - MODE_BUTTON_PIN=16
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+    devices:
+      - /dev/mem:/dev/mem
+      - /dev/gpiomem:/dev/gpiomem
+    depends_on:
+      - hub
+      - persistence
+
+  lock-controller:
+    image: mafciejewiczow/cat-flap-lock-svc:master
+    restart: unless-stopped
+    container_name: lock-controller
+    network_mode: host
+    environment:
+      - LOCK_PIN=26
+    volumes:
+      - sockets:/var/run/cat-flap/sockets
+      - ./cat-flap/logs:/var/log/cat-flap
+    devices:
+      - /dev/mem:/dev/mem
+      - /dev/gpiomem:/dev/gpiomem
+    depends_on:
+      - hub
+      - persistence
+
+volumes:
+  sockets:
+
 ```
 
 Persistent/runtime files are `/data/state.json`, `/data/captured`, `/data/labeled`, and `/data/results`. Inference loads `weights_ncnn_model`; the runtime image provides the model weight.
