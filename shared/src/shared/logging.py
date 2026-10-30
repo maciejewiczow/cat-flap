@@ -1,7 +1,7 @@
 import logging
 import logging.handlers
-from os import environ, makedirs
 import sys
+from os import environ, makedirs
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] [%(name)s] (%(funcName)s) %(message)s"
 

@@ -1,7 +1,8 @@
-from dataclasses import field, dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from PIL.Image import Image
+
 import numpy as np
+from PIL.Image import Image
 
 from shared.state import CatFlapStateMachine
 
