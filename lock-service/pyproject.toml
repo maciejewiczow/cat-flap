@@ -3,7 +3,4 @@ name = "lock-service"
 version = "0.1.0"
 description = "Service managing the locking and unlocking of the flap for the cat flap"
 requires-python = ">=3.13"
-dependencies = [
-    "shared",
-    "pigpio"
-]
+dependencies = ["shared", "pigpio", "gpiozero"]

@@ -318,6 +318,7 @@ name = "hardware-interface-service"
 version = "0.1.0"
 source = { editable = "hardware-interface-service" }
 dependencies = [
+    { name = "gpiozero" },
     { name = "pigpio" },
     { name = "shared" },
     { name = "smbus3" },
@@ -325,6 +326,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "gpiozero" },
     { name = "pigpio" },
     { name = "shared", editable = "shared" },
     { name = "smbus3" },
@@ -478,12 +480,14 @@ name = "lock-service"
 version = "0.1.0"
 source = { editable = "lock-service" }
 dependencies = [
+    { name = "gpiozero" },
     { name = "pigpio" },
     { name = "shared" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "gpiozero" },
     { name = "pigpio" },
     { name = "shared", editable = "shared" },
 ]

@@ -1,8 +1,8 @@
 import asyncio
 from os import environ
 
-from gpiozero import Button, Buzzer  # pyright: ignore[reportMissingTypeStubs]
-from gpiozero.pins.pigpio import PiGPIOFactory  # pyright: ignore[reportMissingTypeStubs]
+from gpiozero import Button, Buzzer
+from gpiozero.pins.pigpio import PiGPIOFactory
 from shared.hub import WorkerMessageHub
 from shared.logging import get_logger
 from shared.main_fn import worker_main
