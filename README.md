@@ -291,7 +291,6 @@ services:
     container_name: persistence
     depends_on:
       - hub
-      - persistence
     volumes:
       - sockets:/var/run/cat-flap/sockets
       - ./cat-flap/logs:/var/log/cat-flap
@@ -302,14 +301,15 @@ services:
     restart: unless-stopped
     container_name: hardware-interface
     network_mode: host
+    privileged: true
     environment:
       - I2C_EXPANDER_ADDRESS=0x20
       - I2C_BUS_NUMBER=1
-      - ACTIVE_DIODE_EXPANDER_PIN=13
-      - MOTION_DETECTED_DIODE_EXPANDER_PIN=12
-      - LOCKED_DIODE_EXPANDER_PIN=11
-      - DOOR_OPEN_DIODE_EXPANDER_PIN=14
-      - INFERENCE_DIODE_EXPANDER_PIN=15
+      - ACTIVE_DIODE_EXPANDER_PIN=5
+      - MOTION_DETECTED_DIODE_EXPANDER_PIN=4
+      - LOCKED_DIODE_EXPANDER_PIN=3
+      - DOOR_OPEN_DIODE_EXPANDER_PIN=6
+      - INFERENCE_DIODE_EXPANDER_PIN=7
       - DOOR_SENSOR_PIN=23
       - BUZZER_PIN=24
       - MODE_BUTTON_PIN=16
@@ -319,6 +319,7 @@ services:
     devices:
       - /dev/mem:/dev/mem
       - /dev/gpiomem:/dev/gpiomem
+      - /dev/i2c-1:/dev/i2c-1
     depends_on:
       - hub
       - persistence
@@ -342,6 +343,7 @@ services:
 
 volumes:
   sockets:
+
 
 ```
 
