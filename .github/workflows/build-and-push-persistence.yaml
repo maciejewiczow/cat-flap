@@ -6,11 +6,10 @@ on:
       - master
     paths:
       - "*"
+      - "!README.md"
+      - "!.gitignore"
       - "shared/**"
       - "persistence-service/**"
-    paths-ignore:
-      - README.md
-      - .gitignore
   workflow_dispatch:
 
 jobs:

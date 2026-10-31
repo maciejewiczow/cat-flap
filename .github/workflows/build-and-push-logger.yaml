@@ -8,9 +8,8 @@ on:
       - "*"
       - "shared/**"
       - "logger-service/**"
-    paths-ignore:
-      - README.md
-      - .gitignore
+      - "!README.md"
+      - "!.gitignore"
   workflow_dispatch:
 
 jobs:

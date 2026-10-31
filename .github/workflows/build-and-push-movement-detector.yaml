@@ -8,9 +8,8 @@ on:
       - "*"
       - "shared/**"
       - "movement-detector-service/**"
-    paths-ignore:
-      - README.md
-      - .gitignore
+      - "!README.md"
+      - "!.gitignore"
   workflow_dispatch:
 
 jobs:
