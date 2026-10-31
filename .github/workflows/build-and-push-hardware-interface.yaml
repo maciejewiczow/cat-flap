@@ -8,6 +8,9 @@ on:
       - "*"
       - "shared/**"
       - "hardware-interface-service/**"
+    paths-ignore:
+      - README.md
+      - .gitignore
   workflow_dispatch:
 
 jobs:

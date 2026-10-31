@@ -8,6 +8,9 @@ on:
       - "*"
       - "shared/**"
       - "lock-service/**"
+    paths-ignore:
+      - README.md
+      - .gitignore
   workflow_dispatch:
 
 jobs:
