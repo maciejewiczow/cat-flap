@@ -52,7 +52,7 @@ class Expander:
             self.register_b_state = action(self.register_b_state, pin_no - 8)
             self.bus.write_byte_data(self.addr, OLATB_REGISTER, self.register_b_state)
         else:
-            self.register_a_state = action(self.register_b_state, pin_no)
+            self.register_a_state = action(self.register_a_state, pin_no)
             self.bus.write_byte_data(self.addr, OLATA_REGISTER, self.register_a_state)
 
     @staticmethod
