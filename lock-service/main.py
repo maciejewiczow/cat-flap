@@ -27,7 +27,11 @@ async def handle_messages(hub: WorkerMessageHub, initial_state: CatFlapStateMach
     log.info("Starting the Service managing the locking and unlocking of the flap")
 
     if initial_state.is_locked:
+        log.info("Initial state is locked, engaging the lock")
         lock_electromagnet.on()
+    else:
+        log.info("Initial state is unlocked, disengaging the lock")
+        lock_electromagnet.off()
 
     async for message in hub.receive():
         match message:
