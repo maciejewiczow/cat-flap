@@ -18,7 +18,7 @@ pin_factory = PiGPIOFactory(
 lock_electromagnet = DigitalOutputDevice(
     int(environ["LOCK_PIN"]),
     pin_factory=pin_factory,
-    active_high=True,
+    active_high=False,
     initial_value=False,
 )
 
